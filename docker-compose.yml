@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ai-service
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "9000:9000"
