@@ -31,8 +31,9 @@ sleep 2
 
 # 启动 Rust Backend
 echo -e "\n${YELLOW}[3/4] 启动 Rust Backend (端口 8080)...${NC}"
+mkdir -p "$PROJECT_DIR/backend/data"
 cd "$PROJECT_DIR/backend"
-nohup cargo run --release > "$LOG_DIR/backend.log" 2>&1 &
+DATABASE_URL="$PROJECT_DIR/backend/data/emuworld.db" nohup cargo run --release > "$LOG_DIR/backend.log" 2>&1 &
 echo "  PID: $!"
 sleep 2
 

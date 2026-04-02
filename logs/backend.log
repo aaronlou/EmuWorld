@@ -1,0 +1,33 @@
+   Compiling emu-world-backend v0.1.0 (/Users/mac/AI_PLAYGROUND/EmuWorld/backend)
+warning: unused import: `sqlx::SqlitePool`
+ --> src/main.rs:1:5
+  |
+1 | use sqlx::SqlitePool;
+  |     ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `FRED_API_BASE` is never used
+ --> src/ingest/fred.rs:3:7
+  |
+3 | const FRED_API_BASE: &str = "https://api.stlouisfed.org/fred";
+  |       ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sync_fred_series` is never used
+ --> src/ingest/fred.rs:5:14
+  |
+5 | pub async fn sync_fred_series(
+  |              ^^^^^^^^^^^^^^^^
+
+warning: function `default_datasets` is never used
+  --> src/ingest/fred.rs:48:8
+   |
+48 | pub fn default_datasets() -> Vec<(&'static str, &'static str, &'static str, &'static str)> {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: `emu-world-backend` (bin "emu-world-backend") generated 4 warnings (run `cargo fix --bin "emu-world-backend" -p emu-world-backend` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 1.84s
+     Running `target/release/emu-world-backend`
+[2m2026-04-02T00:19:01.377104Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080

@@ -6,7 +6,7 @@ pub fn router() -> Router<SqlitePool> {
     Router::new()
         .route("/datasets", get(list_datasets))
         .route("/datasets", post(add_dataset))
-        .route("/datasets/:id/points", get(get_data_points))
+        .route("/datasets/{id}/points", get(get_data_points))
 }
 
 async fn list_datasets(State(pool): State<SqlitePool>) -> Json<Vec<Dataset>> {

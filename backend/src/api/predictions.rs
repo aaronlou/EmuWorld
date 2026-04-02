@@ -6,8 +6,8 @@ pub fn router() -> Router<SqlitePool> {
     Router::new()
         .route("/targets", get(list_targets))
         .route("/targets", post(create_target))
-        .route("/targets/:id/predict", post(generate_prediction))
-        .route("/targets/:id/predictions", get(get_predictions))
+        .route("/targets/{id}/predict", post(generate_prediction))
+        .route("/targets/{id}/predictions", get(get_predictions))
 }
 
 pub async fn list_targets(State(pool): State<SqlitePool>) -> Json<Vec<PredictionTarget>> {

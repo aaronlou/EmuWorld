@@ -1,8 +1,18 @@
 use sqlx::SqlitePool;
+use std::str::FromStr;
 
 pub async fn init_pool(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
-    std::fs::create_dir_all(std::path::Path::new(database_url).parent().unwrap_or(std::path::Path::new("."))).ok();
-    SqlitePool::connect(database_url).await
+    let url = if database_url.starts_with("sqlite:") {
+        database_url.to_string()
+    } else {
+        format!("sqlite:{}", database_url)
+    };
+    SqlitePool::connect_with(
+        sqlx::sqlite::SqliteConnectOptions::from_str(&url)
+            .expect("invalid sqlite url")
+            .create_if_missing(true)
+    )
+    .await
 }
 
 pub async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {

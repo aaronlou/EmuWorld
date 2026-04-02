@@ -11,7 +11,18 @@ mod models;
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let pool = db::init_pool("data/emuworld.db").await.expect("Failed to init database");
+    let db_path = std::env::var("DATABASE_URL").unwrap_or_else(|_| "data/emuworld.db".to_string());
+    let file_path = if db_path.starts_with("sqlite:") {
+        db_path.strip_prefix("sqlite:").unwrap()
+    } else {
+        &db_path
+    };
+    let parent = std::path::Path::new(file_path).parent();
+    if let Some(p) = parent {
+        std::fs::create_dir_all(p).expect(&format!("Failed to create directory: {:?}", p));
+    }
+    let db_url = if db_path.starts_with("sqlite:") { db_path } else { format!("sqlite:{}", db_path) };
+    let pool = db::init_pool(&db_url).await.expect("Failed to init database");
     db::run_migrations(&pool).await.expect("Failed to run migrations");
 
     let app = Router::new()
