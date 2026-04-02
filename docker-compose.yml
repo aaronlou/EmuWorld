@@ -1,19 +1,58 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: emuworld
+      POSTGRES_USER: emuworld
+      POSTGRES_PASSWORD: emuworld_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emuworld"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   frontend:
     build: ./frontend
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   backend:
     build: ./backend
     ports:
       - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://emuworld:emuworld_pass@postgres:5432/emuworld
+      AI_SERVICE_URL: http://ai-service:9001
     depends_on:
-      - ai-service
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   ai-service:
     build: ./ai-service
     ports:
       - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pgdata:
