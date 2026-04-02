@@ -3,5 +3,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+RUN python -m grpc_tools.protoc -Iproto --python_out=. --grpc_python_out=. proto/ai_service.proto
 EXPOSE 9000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
+EXPOSE 9001
+CMD ["python", "main.py"]
