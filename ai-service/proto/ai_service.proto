@@ -1,0 +1,16 @@
+syntax = "proto3";
+package ai_service;
+
+service PredictionService {
+  rpc Predict (PredictRequest) returns (PredictResponse);
+}
+
+message PredictRequest {
+  string question = 1;
+  int32 horizon_days = 2;
+  repeated string outcomes = 3;
+}
+
+message PredictResponse {
+  repeated double probabilities = 1;
+}

@@ -1,33 +1,104 @@
-   Compiling emu-world-backend v0.1.0 (/Users/mac/AI_PLAYGROUND/EmuWorld/backend)
-warning: unused import: `sqlx::SqlitePool`
- --> src/main.rs:1:5
+   Compiling emu-world-backend v0.1.0 (/Users/lousiyuan/AI_PLAYGROUND/EmuWorld/backend)
+warning: unused import: `UpdateDataset`
+ --> src/repo/sqlite/mod.rs:6:176
   |
-1 | use sqlx::SqlitePool;
-  |     ^^^^^^^^^^^^^^^^
+6 | ...ionRepo, RepoError, Result, TargetRepo, UpdateDataSource, UpdateDataset,
+  |                                                              ^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-warning: constant `FRED_API_BASE` is never used
- --> src/ingest/fred.rs:3:7
-  |
-3 | const FRED_API_BASE: &str = "https://api.stlouisfed.org/fred";
-  |       ^^^^^^^^^^^^^
-  |
-  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: function `sync_fred_series` is never used
- --> src/ingest/fred.rs:5:14
-  |
-5 | pub async fn sync_fred_series(
-  |              ^^^^^^^^^^^^^^^^
-
-warning: function `default_datasets` is never used
-  --> src/ingest/fred.rs:48:8
+warning: struct `UpdateDataset` is never constructed
+  --> src/repo/mod.rs:33:12
    |
-48 | pub fn default_datasets() -> Vec<(&'static str, &'static str, &'static str, &'static str)> {
-   |        ^^^^^^^^^^^^^^^^
+33 | pub struct UpdateDataset {
+   |            ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: `emu-world-backend` (bin "emu-world-backend") generated 4 warnings (run `cargo fix --bin "emu-world-backend" -p emu-world-backend` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 1.84s
+warning: struct `CreateDataPoint` is never constructed
+  --> src/repo/mod.rs:59:12
+   |
+59 | pub struct CreateDataPoint {
+   |            ^^^^^^^^^^^^^^^
+
+warning: methods `get_dataset` and `upsert_data_point` are never used
+  --> src/repo/mod.rs:77:14
+   |
+75 | pub trait DatasetRepo: Send + Sync {
+   |           ----------- methods in this trait
+76 |     async fn list_datasets(&self) -> Result<Vec<Dataset>>;
+77 |     async fn get_dataset(&self, id: i64) -> Result<Option<Dataset>>;
+   |              ^^^^^^^^^^^
+...
+80 |     async fn upsert_data_point(&self, point: &CreateDataPoint) -> Result<usize>;
+   |              ^^^^^^^^^^^^^^^^^
+
+warning: method `get_source_by_name` is never used
+   --> src/repo/mod.rs:109:14
+    |
+106 | pub trait DataSourceRepo: Send + Sync {
+    |           -------------- method in this trait
+...
+109 |     async fn get_source_by_name(&self, name: &str) -> Result<Option<DataSource>>;
+    |              ^^^^^^^^^^^^^^^^^^
+
+warning: methods `base_url` and `api_key` are never used
+  --> src/ingest/mod.rs:19:8
+   |
+17 | pub trait DataSource: Send + Sync {
+   |           ---------- methods in this trait
+18 |     fn name(&self) -> &str;
+19 |     fn base_url(&self) -> &str;
+   |        ^^^^^^^^
+20 |     fn api_key(&self) -> &str;
+   |        ^^^^^^^
+
+warning: field `api_key` is never read
+ --> src/ingest/world_bank.rs:7:5
+  |
+5 | pub struct WorldBankSource {
+  |            --------------- field in this struct
+6 |     api_base_url: String,
+7 |     api_key: String,
+  |     ^^^^^^^
+
+warning: field `api_key` is never read
+ --> src/ingest/imf.rs:7:5
+  |
+5 | pub struct IMFSource {
+  |            --------- field in this struct
+6 |     api_base_url: String,
+7 |     api_key: String,
+  |     ^^^^^^^
+
+warning: field `api_key` is never read
+ --> src/ingest/nbs.rs:7:5
+  |
+5 | pub struct NBSSource {
+  |            --------- field in this struct
+6 |     api_base_url: String,
+7 |     api_key: String,
+  |     ^^^^^^^
+
+warning: field `api_key` is never read
+ --> src/ingest/oecd.rs:7:5
+  |
+5 | pub struct OECDSoure {
+  |            --------- field in this struct
+6 |     api_base_url: String,
+7 |     api_key: String,
+  |     ^^^^^^^
+
+warning: field `api_key` is never read
+ --> src/ingest/eurostat.rs:7:5
+  |
+5 | pub struct EurostatSource {
+  |            -------------- field in this struct
+6 |     api_base_url: String,
+7 |     api_key: String,
+  |     ^^^^^^^
+
+warning: `emu-world-backend` (bin "emu-world-backend") generated 11 warnings (run `cargo fix --bin "emu-world-backend" -p emu-world-backend` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 7.71s
      Running `target/release/emu-world-backend`
-[2m2026-04-02T00:19:01.377104Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080
+[2m2026-04-02T02:58:04.529676Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080

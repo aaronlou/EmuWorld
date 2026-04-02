@@ -1,8 +1,10 @@
-use axum::{Router, routing::{get, post}, extract::State, Json};
-use sqlx::SqlitePool;
-use crate::models::{PredictionTarget, Prediction, PredictionResponse, CreateTargetRequest};
+use axum::{extract::State, routing::{get, post}, Json, Router};
+use std::sync::Arc;
 
-pub fn router() -> Router<SqlitePool> {
+use crate::models::{CreateTargetRequest, PredictionResponse, PredictionTarget};
+use crate::repo::AppRepo;
+
+pub fn router() -> Router<Arc<dyn AppRepo>> {
     Router::new()
         .route("/targets", get(list_targets))
         .route("/targets", post(create_target))
@@ -10,107 +12,43 @@ pub fn router() -> Router<SqlitePool> {
         .route("/targets/{id}/predictions", get(get_predictions))
 }
 
-pub async fn list_targets(State(pool): State<SqlitePool>) -> Json<Vec<PredictionTarget>> {
-    let targets = sqlx::query_as::<_, PredictionTarget>(
-        "SELECT * FROM prediction_targets WHERE active = 1 ORDER BY created_at DESC"
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-    Json(targets)
+pub async fn list_targets(
+    State(repo): State<Arc<dyn AppRepo>>,
+) -> Json<Vec<PredictionTarget>> {
+    match repo.list_targets().await {
+        Ok(targets) => Json(targets),
+        Err(_) => Json(vec![]),
+    }
 }
 
 async fn create_target(
-    State(pool): State<SqlitePool>,
+    State(repo): State<Arc<dyn AppRepo>>,
     Json(req): Json<CreateTargetRequest>,
-) -> Json<PredictionTarget> {
-    let outcomes_json = serde_json::to_string(&req.outcomes).unwrap();
-    let row = sqlx::query(
-        "INSERT INTO prediction_targets (question, category, horizon_days, outcomes) VALUES (?, ?, ?, ?)"
-    )
-    .bind(&req.question)
-    .bind(&req.category)
-    .bind(req.horizon_days)
-    .bind(&outcomes_json)
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    let id = row.last_insert_rowid();
-    Json(sqlx::query_as::<_, PredictionTarget>("SELECT * FROM prediction_targets WHERE id = ?")
-        .bind(id)
-        .fetch_one(&pool)
-        .await
-        .unwrap())
+) -> Result<Json<PredictionTarget>, (axum::http::StatusCode, String)> {
+    match repo.create_target(&req).await {
+        Ok(target) => Ok(Json(target)),
+        Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
 }
 
 async fn generate_prediction(
-    State(pool): State<SqlitePool>,
+    State(repo): State<Arc<dyn AppRepo>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
-) -> Json<PredictionResponse> {
-    let target: PredictionTarget = sqlx::query_as::<_, PredictionTarget>(
-        "SELECT * FROM prediction_targets WHERE id = ?"
-    )
-    .bind(id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+) -> Result<Json<PredictionResponse>, (axum::http::StatusCode, String)> {
+    let ai_service_url = std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://localhost:9000".to_string());
 
-    let outcomes: Vec<String> = serde_json::from_str(&target.outcomes).unwrap_or_default();
-
-    let client = reqwest::Client::new();
-    let ai_response = client
-        .post("http://localhost:9000/predict")
-        .json(&serde_json::json!({
-            "question": target.question,
-            "horizon_days": target.horizon_days,
-            "outcomes": outcomes,
-        }))
-        .send()
-        .await
-        .ok();
-
-    let predictions = if let Some(resp) = ai_response {
-        let probs: Vec<f64> = resp.json().await.unwrap_or_default();
-        for (outcome, prob) in outcomes.iter().zip(probs.iter()) {
-            sqlx::query(
-                "INSERT INTO predictions (target_id, outcome, probability, confidence_lower, confidence_upper) VALUES (?, ?, ?, ?, ?)"
-            )
-            .bind(id)
-            .bind(outcome)
-            .bind(prob)
-            .bind((prob - 0.05).max(0.0))
-            .bind((prob + 0.05).min(1.0))
-            .execute(&pool)
-            .await
-            .unwrap();
-        }
-        sqlx::query_as::<_, Prediction>("SELECT * FROM predictions WHERE target_id = ? ORDER BY probability DESC")
-            .bind(id)
-            .fetch_all(&pool)
-            .await
-            .unwrap_or_default()
-    } else {
-        vec![]
-    };
-
-    Json(PredictionResponse {
-        target,
-        predictions,
-        generated_at: chrono::Utc::now(),
-    })
+    match repo.generate(id, &ai_service_url).await {
+        Ok(response) => Ok(Json(response)),
+        Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
 }
 
 pub async fn get_predictions(
-    State(pool): State<SqlitePool>,
+    State(repo): State<Arc<dyn AppRepo>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
-) -> Json<Vec<Prediction>> {
-    let predictions = sqlx::query_as::<_, Prediction>(
-        "SELECT * FROM predictions WHERE target_id = ? ORDER BY probability DESC"
-    )
-    .bind(id)
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-    Json(predictions)
+) -> Json<Vec<crate::models::Prediction>> {
+    match repo.list_by_target(id).await {
+        Ok(predictions) => Json(predictions),
+        Err(_) => Json(vec![]),
+    }
 }

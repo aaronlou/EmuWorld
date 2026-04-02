@@ -7,10 +7,22 @@ pub struct Dataset {
     pub name: String,
     pub source: String,
     pub category: String,
-    pub fred_code: Option<String>,
+    pub external_id: Option<String>,
     pub description: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct DataSource {
+    pub id: i64,
+    pub name: String,
+    pub display_name: String,
+    pub api_base_url: String,
+    pub api_key: String,
+    pub description: String,
+    pub enabled: bool,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

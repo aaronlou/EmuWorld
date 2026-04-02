@@ -1,57 +1,48 @@
-use axum::{Router, routing::{get, post}, extract::State, Json};
-use sqlx::SqlitePool;
-use crate::models::Dataset;
+use axum::{extract::State, routing::{get, post}, Json, Router};
+use std::sync::Arc;
 
-pub fn router() -> Router<SqlitePool> {
+use crate::repo::{AppRepo, CreateDataset};
+
+pub fn router() -> Router<Arc<dyn AppRepo>> {
     Router::new()
         .route("/datasets", get(list_datasets))
         .route("/datasets", post(add_dataset))
         .route("/datasets/{id}/points", get(get_data_points))
 }
 
-async fn list_datasets(State(pool): State<SqlitePool>) -> Json<Vec<Dataset>> {
-    let datasets = sqlx::query_as::<_, Dataset>("SELECT * FROM datasets ORDER BY category, name")
-        .fetch_all(&pool)
-        .await
-        .unwrap_or_default();
-    Json(datasets)
+async fn list_datasets(
+    State(repo): State<Arc<dyn AppRepo>>,
+) -> Json<Vec<crate::models::Dataset>> {
+    match repo.list_datasets().await {
+        Ok(datasets) => Json(datasets),
+        Err(_) => Json(vec![]),
+    }
 }
 
 async fn add_dataset(
-    State(pool): State<SqlitePool>,
+    State(repo): State<Arc<dyn AppRepo>>,
     Json(dataset): Json<serde_json::Value>,
-) -> Json<Dataset> {
-    let row = sqlx::query(
-        "INSERT INTO datasets (name, source, category, fred_code, description) VALUES (?, ?, ?, ?, ?)"
-    )
-    .bind(dataset["name"].as_str().unwrap_or(""))
-    .bind(dataset["source"].as_str().unwrap_or(""))
-    .bind(dataset["category"].as_str().unwrap_or(""))
-    .bind(dataset.get("fred_code").and_then(|v| v.as_str()))
-    .bind(dataset["description"].as_str().unwrap_or(""))
-    .execute(&pool)
-    .await
-    .unwrap();
+) -> Result<Json<crate::models::Dataset>, (axum::http::StatusCode, String)> {
+    let create = CreateDataset {
+        name: dataset["name"].as_str().unwrap_or("").to_string(),
+        source: dataset["source"].as_str().unwrap_or("").to_string(),
+        category: dataset["category"].as_str().unwrap_or("").to_string(),
+        external_id: dataset.get("external_id").and_then(|v| v.as_str()).map(String::from),
+        description: dataset["description"].as_str().unwrap_or("").to_string(),
+    };
 
-    let id = row.last_insert_rowid();
-    sqlx::query_as::<_, Dataset>("SELECT * FROM datasets WHERE id = ?")
-        .bind(id)
-        .fetch_one(&pool)
-        .await
-        .unwrap()
-        .into()
+    match repo.create_dataset(&create).await {
+        Ok(d) => Ok(Json(d)),
+        Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
 }
 
 async fn get_data_points(
-    State(pool): State<SqlitePool>,
+    State(repo): State<Arc<dyn AppRepo>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
 ) -> Json<Vec<crate::models::DataPoint>> {
-    let points = sqlx::query_as::<_, crate::models::DataPoint>(
-        "SELECT * FROM data_points WHERE dataset_id = ? ORDER BY date"
-    )
-    .bind(id)
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-    Json(points)
+    match repo.data_points(id).await {
+        Ok(points) => Json(points),
+        Err(_) => Json(vec![]),
+    }
 }
