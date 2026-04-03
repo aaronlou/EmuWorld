@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-import { Globe, Database, AlertCircle } from 'lucide-react'
 import type { Dataset } from '../types'
 
 interface DatasetListProps {
@@ -8,42 +6,44 @@ interface DatasetListProps {
 }
 
 export function DatasetList({ datasets, empty }: DatasetListProps) {
+  if (empty || datasets.length === 0) {
+    return (
+      <div>
+        <div className="section-header">
+          <span className="section-title">Data Sources</span>
+          <span className="section-action">awaiting configuration</span>
+        </div>
+        <div className="empty">No datasets configured. Set FRED API key to begin sync.</div>
+      </div>
+    )
+  }
+
   return (
-    <>
-      <h2>
-        <Globe size={14} />
-        官方数据源
-      </h2>
-      {empty || datasets.length === 0 ? (
-        <div className="empty">
-          <AlertCircle size={32} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-          <p>暂无数据集，请先配置 FRED API Key 同步数据</p>
-        </div>
-      ) : (
-        <div className="grid">
-          {datasets.map(d => {
-            const Icon = Database
-            
-            return (
-              <motion.div
-                key={d.id}
-                className="card"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Icon size={18} style={{ color: 'var(--neon-cyan)' }} />
-                  <h3>{d.name}</h3>
-                </div>
-                <span className="badge">{d.category}</span>
-                <p>{d.description}</p>
-                <small>来源: {d.source}</small>
-              </motion.div>
-            )
-          })}
-        </div>
-      )}
-    </>
+    <div>
+      <div className="section-header">
+        <span className="section-title">Data Sources</span>
+        <span className="section-action">{datasets.length} sources</span>
+      </div>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Source</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {datasets.map(d => (
+            <tr key={d.id}>
+              <td style={{ fontWeight: 500 }}>{d.name}</td>
+              <td><span className="badge">{d.category}</span></td>
+              <td style={{ color: 'var(--text-secondary)' }}>{d.source}</td>
+              <td style={{ color: 'var(--text-tertiary)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

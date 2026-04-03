@@ -3,18 +3,16 @@ use sqlx::{PgPool, Row};
 
 use crate::models::{DataPoint, Dataset, DataSource, Prediction, PredictionResponse, PredictionTarget};
 use crate::repo::{
-    AppRepo, CreateDataPoint, CreateDataset, CreateDataSource, CreatePrediction, DatabasePool, DatasetRepo, DataSourceRepo, PredictionRepo, RepoError, Result, TargetRepo, UpdateDataSource,
+    CreateDataPoint, CreateDataset, CreateDataSource, CreatePrediction, DatasetRepo, DataSourceRepo, PredictionRepo, RepoError, Result, TargetRepo, UpdateDataSource, AppRepo,
 };
 
 pub struct PostgresRepo {
     pool: PgPool,
-    db_pool: DatabasePool,
 }
 
 impl PostgresRepo {
     pub fn new(pool: PgPool) -> Self {
-        let db_pool = DatabasePool::Postgres(pool.clone());
-        Self { pool, db_pool }
+        Self { pool }
     }
 }
 
@@ -56,6 +54,22 @@ impl DatasetRepo for PostgresRepo {
             .map_err(|e| RepoError::Database(e.to_string()))
     }
 
+    async fn delete_dataset(&self, id: i64) -> Result<()> {
+        sqlx::query("DELETE FROM data_points WHERE dataset_id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| RepoError::Database(e.to_string()))?;
+
+        sqlx::query("DELETE FROM datasets WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| RepoError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
     async fn data_points(&self, dataset_id: i64) -> Result<Vec<DataPoint>> {
         sqlx::query_as::<_, DataPoint>("SELECT * FROM data_points WHERE dataset_id = $1 ORDER BY date")
             .bind(dataset_id)
@@ -77,6 +91,41 @@ impl DatasetRepo for PostgresRepo {
         .map_err(|e| RepoError::Database(e.to_string()))?;
 
         Ok(result.rows_affected() as usize)
+    }
+
+    async fn upsert_or_create_dataset(&self, name: &str, source: &str, category: &str, external_id: &str, description: &str) -> Result<(i64, bool)> {
+        let existing = sqlx::query("SELECT id FROM datasets WHERE source = $1 AND external_id = $2")
+            .bind(source)
+            .bind(external_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| RepoError::Database(e.to_string()))?;
+
+        if let Some(row) = existing {
+            Ok((row.get::<i64, _>("id"), false))
+        } else {
+            let row = sqlx::query(
+                "INSERT INTO datasets (name, source, category, external_id, description) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+            )
+            .bind(name)
+            .bind(source)
+            .bind(category)
+            .bind(external_id)
+            .bind(description)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| RepoError::Database(e.to_string()))?;
+
+            Ok((row.get::<i64, _>("id"), true))
+        }
+    }
+
+    async fn datasets_by_source(&self, source_name: &str) -> Result<Vec<Dataset>> {
+        sqlx::query_as::<_, Dataset>("SELECT * FROM datasets WHERE source = $1 ORDER BY category, name")
+            .bind(source_name)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| RepoError::Database(e.to_string()))
     }
 }
 
@@ -300,11 +349,7 @@ impl DataSourceRepo for PostgresRepo {
     }
 }
 
-impl AppRepo for PostgresRepo {
-    fn pool(&self) -> &DatabasePool {
-        &self.db_pool
-    }
-}
+impl AppRepo for PostgresRepo {}
 
 pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     sqlx::query(
@@ -389,6 +434,27 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
         "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_data_points_dataset_id ON data_points(dataset_id)",
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_datasets_source_external ON datasets(source, external_id)",
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_predictions_target_id ON predictions(target_id)",
     )
     .execute(pool)
     .await

@@ -10,12 +10,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Default: use SQLite
-DB_MODE="${DB_MODE:-sqlite}"
-
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  EmuWorld - 一键启动${NC}"
-echo -e "${GREEN}  数据库模式: ${DB_MODE}${NC}"
+echo -e "${GREEN}  数据库: PostgreSQL${NC}"
 echo -e "${GREEN}========================================${NC}"
 
 # 检查并停止已运行的服务
@@ -33,28 +30,21 @@ nohup uvicorn main:app --host 0.0.0.0 --port 9000 > "$LOG_DIR/ai-service.log" 2>
 echo "  PID: $!"
 sleep 2
 
-# 启动 Rust Backend
-echo -e "\n${YELLOW}[3/4] 启动 Rust Backend (端口 8080)...${NC}"
-mkdir -p "$PROJECT_DIR/backend/data"
-cd "$PROJECT_DIR/backend"
-
-if [ "$DB_MODE" = "postgres" ]; then
-    # Check if PostgreSQL is running
-    if ! pg_isready -h localhost -p 5432 &>/dev/null; then
-        echo -e "${YELLOW}  启动本地 PostgreSQL...${NC}"
-        docker compose up -d postgres 2>/dev/null || docker-compose up -d postgres 2>/dev/null || {
-            echo -e "${RED}  PostgreSQL 未找到。请先安装或运行 docker compose up -d postgres${NC}"
-            exit 1
-        }
-        sleep 3
-    fi
-    export DATABASE_URL="postgresql://emuworld:emuworld_pass@localhost:5432/emuworld"
-    echo -e "  使用 PostgreSQL: $DATABASE_URL"
-else
-    export DATABASE_URL="$PROJECT_DIR/backend/data/emuworld.db"
-    echo -e "  使用 SQLite: $DATABASE_URL"
+# 启动 PostgreSQL (Docker)
+echo -e "\n${YELLOW}[3/4] 启动 PostgreSQL + Rust Backend...${NC}"
+if ! pg_isready -h localhost -p 5432 &>/dev/null; then
+    echo -e "  启动本地 PostgreSQL..."
+    docker compose up -d postgres 2>/dev/null || docker-compose up -d postgres 2>/dev/null || {
+        echo -e "${RED}  PostgreSQL 未找到。请先安装或运行 docker compose up -d postgres${NC}"
+        exit 1
+    }
+    sleep 5
 fi
 
+export DATABASE_URL="postgresql://emuworld:emuworld_pass@localhost:5432/emuworld"
+export AI_SERVICE_URL="http://localhost:9000"
+
+cd "$PROJECT_DIR/backend"
 nohup cargo run --release > "$LOG_DIR/backend.log" 2>&1 &
 echo "  PID: $!"
 sleep 2

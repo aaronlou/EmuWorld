@@ -15,21 +15,13 @@ services:
       timeout: 5s
       retries: 5
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-
   backend:
     build: ./backend
     ports:
       - "8080:8080"
     environment:
       DATABASE_URL: postgresql://emuworld:emuworld_pass@postgres:5432/emuworld
-      AI_SERVICE_URL: http://ai-service:9001
+      AI_SERVICE_URL: http://ai-service:9000
     depends_on:
       postgres:
         condition: service_healthy

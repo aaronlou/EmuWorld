@@ -1,41 +1,11 @@
 use async_trait::async_trait;
 use serde::Deserialize;
-use sqlx::{Pool, Postgres, Sqlite};
+use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::models::{CreateTargetRequest, DataPoint, Dataset, DataSource, Prediction, PredictionResponse, PredictionTarget};
 
 pub mod postgres;
-pub mod sqlite;
-
-/// Database-agnostic pool wrapper
-#[derive(Clone)]
-pub enum DatabasePool {
-    Sqlite(Pool<Sqlite>),
-    Postgres(Pool<Postgres>),
-}
-
-impl DatabasePool {
-    pub fn is_postgres(&self) -> bool {
-        matches!(self, Self::Postgres(_))
-    }
-
-    pub fn is_sqlite(&self) -> bool {
-        matches!(self, Self::Sqlite(_))
-    }
-}
-
-impl From<Pool<Sqlite>> for DatabasePool {
-    fn from(pool: Pool<Sqlite>) -> Self {
-        Self::Sqlite(pool)
-    }
-}
-
-impl From<Pool<Postgres>> for DatabasePool {
-    fn from(pool: Pool<Postgres>) -> Self {
-        Self::Postgres(pool)
-    }
-}
 
 #[derive(Debug, Error)]
 pub enum RepoError {
@@ -107,8 +77,11 @@ pub trait DatasetRepo: Send + Sync {
     async fn list_datasets(&self) -> Result<Vec<Dataset>>;
     async fn get_dataset(&self, id: i64) -> Result<Option<Dataset>>;
     async fn create_dataset(&self, dataset: &CreateDataset) -> Result<Dataset>;
+    async fn delete_dataset(&self, id: i64) -> Result<()>;
     async fn data_points(&self, dataset_id: i64) -> Result<Vec<DataPoint>>;
     async fn upsert_data_point(&self, point: &CreateDataPoint) -> Result<usize>;
+    async fn upsert_or_create_dataset(&self, name: &str, source: &str, category: &str, external_id: &str, description: &str) -> Result<(i64, bool)>;
+    async fn datasets_by_source(&self, source_name: &str) -> Result<Vec<Dataset>>;
 }
 
 #[async_trait]
@@ -129,10 +102,6 @@ pub trait PredictionRepo: Send + Sync {
     ) -> Result<PredictionResponse>;
 }
 
-pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo {
-    fn pool(&self) -> &DatabasePool;
-}
-
 #[async_trait]
 pub trait DataSourceRepo: Send + Sync {
     async fn list_sources(&self) -> Result<Vec<DataSource>>;
@@ -141,4 +110,12 @@ pub trait DataSourceRepo: Send + Sync {
     async fn create_source(&self, source: &CreateDataSource) -> Result<DataSource>;
     async fn update_source(&self, id: i64, updates: &UpdateDataSource) -> Result<DataSource>;
     async fn delete_source(&self, id: i64) -> Result<()>;
+}
+
+pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo {}
+
+pub async fn init_pool(db_url: &str) -> Result<PgPool> {
+    sqlx::PgPool::connect(db_url)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))
 }

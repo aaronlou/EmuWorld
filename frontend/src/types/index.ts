@@ -52,4 +52,4 @@ export const CATEGORY_LABELS: Record<string, string> = {
   trade: '进出口',
 }
 
-export const CHART_COLORS = ['#00f0ff', '#ff006e', '#00ff88', '#8b5cf6', '#2563eb', '#f59e0b']
+export const CHART_COLORS = ['#00f5d4', '#f72585', '#4361ee', '#7209b7', '#06d6a0', '#ffd60a']

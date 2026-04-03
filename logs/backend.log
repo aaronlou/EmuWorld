@@ -1,37 +1,72 @@
-   Compiling emu-world-backend v0.1.0 (/Users/lousiyuan/AI_PLAYGROUND/EmuWorld/backend)
-warning: unused import: `UpdateDataset`
- --> src/repo/sqlite/mod.rs:6:176
-  |
-6 | ...ionRepo, RepoError, Result, TargetRepo, UpdateDataSource, UpdateDataset,
-  |                                                              ^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
+   Compiling zerocopy v0.8.48
+   Compiling smallvec v1.15.1
+   Compiling subtle v2.6.1
+   Compiling getrandom v0.2.17
+   Compiling tinyvec_macros v0.1.1
+   Compiling form_urlencoded v1.2.2
+   Compiling unicode-properties v0.1.4
+   Compiling unicode-bidi v0.3.18
+   Compiling whoami v1.6.1
+   Compiling home v0.5.12
+   Compiling tinyvec v1.11.0
+   Compiling digest v0.10.7
+   Compiling rand_core v0.6.4
+   Compiling byteorder v1.5.0
+   Compiling bitflags v2.11.0
+   Compiling sha2 v0.10.9
+   Compiling hmac v0.12.1
+   Compiling icu_normalizer v2.2.0
+   Compiling parking_lot_core v0.9.12
+   Compiling unicode-normalization v0.1.25
+   Compiling md-5 v0.10.6
+   Compiling hkdf v0.12.4
+   Compiling parking_lot v0.12.5
+   Compiling hex v0.4.3
+   Compiling dotenvy v0.15.7
+   Compiling stringprep v0.1.5
+   Compiling tracing-subscriber v0.3.23
+   Compiling futures-intrusive v0.5.0
+   Compiling async-trait v0.1.89
+   Compiling tokio v1.50.0
+   Compiling idna_adapter v1.2.1
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling sqlx-core v0.8.6
+   Compiling ppv-lite86 v0.2.21
+   Compiling rand_chacha v0.3.1
+   Compiling rand v0.8.5
+   Compiling tokio-util v0.7.18
+   Compiling tokio-stream v0.1.18
+   Compiling tower v0.5.3
+   Compiling tokio-native-tls v0.3.1
+   Compiling sqlx-postgres v0.8.6
+   Compiling tower-http v0.6.8
+   Compiling h2 v0.4.13
+   Compiling sqlx-macros-core v0.8.6
+   Compiling hyper v1.9.0
+   Compiling sqlx-macros v0.8.6
+   Compiling hyper-util v0.1.20
+   Compiling sqlx v0.8.6
+   Compiling hyper-tls v0.6.0
+   Compiling axum v0.8.8
+   Compiling reqwest v0.12.28
+   Compiling emu-world-backend v0.1.0 (/Users/mac/AI_PLAYGROUND/EmuWorld/backend)
 warning: struct `UpdateDataset` is never constructed
-  --> src/repo/mod.rs:33:12
+  --> src/repo/mod.rs:34:12
    |
-33 | pub struct UpdateDataset {
+34 | pub struct UpdateDataset {
    |            ^^^^^^^^^^^^^
    |
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: struct `CreateDataPoint` is never constructed
-  --> src/repo/mod.rs:59:12
+warning: method `get_dataset` is never used
+  --> src/repo/mod.rs:78:14
    |
-59 | pub struct CreateDataPoint {
-   |            ^^^^^^^^^^^^^^^
-
-warning: methods `get_dataset` and `upsert_data_point` are never used
-  --> src/repo/mod.rs:77:14
-   |
-75 | pub trait DatasetRepo: Send + Sync {
-   |           ----------- methods in this trait
-76 |     async fn list_datasets(&self) -> Result<Vec<Dataset>>;
-77 |     async fn get_dataset(&self, id: i64) -> Result<Option<Dataset>>;
+76 | pub trait DatasetRepo: Send + Sync {
+   |           ----------- method in this trait
+77 |     async fn list_datasets(&self) -> Result<Vec<Dataset>>;
+78 |     async fn get_dataset(&self, id: i64) -> Result<Option<Dataset>>;
    |              ^^^^^^^^^^^
-...
-80 |     async fn upsert_data_point(&self, point: &CreateDataPoint) -> Result<usize>;
-   |              ^^^^^^^^^^^^^^^^^
 
 warning: method `get_source_by_name` is never used
    --> src/repo/mod.rs:109:14
@@ -98,7 +133,11 @@ warning: field `api_key` is never read
 7 |     api_key: String,
   |     ^^^^^^^
 
-warning: `emu-world-backend` (bin "emu-world-backend") generated 11 warnings (run `cargo fix --bin "emu-world-backend" -p emu-world-backend` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 7.71s
+warning: `emu-world-backend` (bin "emu-world-backend") generated 9 warnings
+    Finished `release` profile [optimized] target(s) in 12.15s
      Running `target/release/emu-world-backend`
-[2m2026-04-02T02:58:04.529676Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080
+[2m2026-04-02T13:29:57.936632Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m Connecting to PostgreSQL: postgresql://emuworld:emuworld_pass@localhost:5432/emuworld
+
+thread 'main' (1441632) panicked at src/main.rs:17:47:
+Failed to connect to PostgreSQL: Database("error returned from database: role \"emuworld\" does not exist")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

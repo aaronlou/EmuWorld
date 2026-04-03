@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-import { Plus, Target, Sparkles, Play, Activity } from 'lucide-react'
 import { CATEGORY_LABELS } from '../types'
 import type { Target as TargetType } from '../types'
 
@@ -26,14 +24,13 @@ export function TargetList({
   onPredict,
 }: TargetListProps) {
   return (
-    <>
-      <h2>
-        <Plus size={14} />
-        创建分析目标
-      </h2>
+    <div>
+      <div className="section-header">
+        <span className="section-title">New Target</span>
+      </div>
       <div className="form">
         <input
-          placeholder="分析目标，如：中国 CPI 明年是否超过 2%？"
+          placeholder="Question, e.g. Will China CPI exceed 2% next year?"
           value={newTarget.question}
           onChange={e => onNewTargetChange({ ...newTarget, question: e.target.value })}
         />
@@ -52,11 +49,11 @@ export function TargetList({
             max="365"
             value={newTarget.horizon_days}
             onChange={e => onNewTargetChange({ ...newTarget, horizon_days: parseInt(e.target.value) })}
-            placeholder="预测天数"
+            placeholder="Horizon (days)"
           />
         </div>
         <input
-          placeholder="可能结果，用逗号分隔，如：是,否,不确定"
+          placeholder="Outcomes, comma separated, e.g. yes,no,uncertain"
           value={newTarget.outcomes}
           onChange={e => onNewTargetChange({ ...newTarget, outcomes: e.target.value })}
         />
@@ -64,51 +61,50 @@ export function TargetList({
           onClick={onCreateTarget}
           disabled={!newTarget.question || !newTarget.outcomes}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Sparkles size={16} />
-            创建目标
-          </span>
+          Create Target
         </button>
       </div>
 
-      <h2>
-        <Target size={14} />
-        已有目标
-      </h2>
-      {targets.length === 0 ? (
-        <div className="empty">
-          <Target size={32} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-          <p>暂无分析目标</p>
+      <div style={{ marginTop: 16 }}>
+        <div className="section-header">
+          <span className="section-title">Targets</span>
+          <span className="section-action">{targets.length} total</span>
         </div>
-      ) : (
-        <div className="grid">
-          {targets.map(t => {
-            const Icon = Target
-            return (
-              <motion.div
-                key={t.id}
-                className="card"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Icon size={18} style={{ color: 'var(--neon-cyan)' }} />
-                  <h3>{t.question}</h3>
-                </div>
-                <span className="badge">{t.category}</span>
-                <p>预测周期: {t.horizon_days} 天</p>
-                <button onClick={() => onPredict(t)} disabled={loading}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {loading ? <Activity size={16} className="spin" /> : <Play size={16} />}
-                    {loading ? '生成中...' : '生成预测'}
-                  </span>
-                </button>
-              </motion.div>
-            )
-          })}
-        </div>
-      )}
-    </>
+        {targets.length === 0 ? (
+          <div className="empty">No targets yet.</div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Category</th>
+                <th>Horizon</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {targets.map(t => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 500, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.question}</td>
+                  <td><span className="badge secondary">{t.category}</span></td>
+                  <td>{t.horizon_days}d</td>
+                  <td>
+                    <span className="badge" style={t.active ? { background: 'var(--green-dim)', borderColor: 'rgba(52,211,153,0.15)', color: 'var(--green)' } : {}}>
+                      {t.active ? 'active' : 'idle'}
+                    </span>
+                  </td>
+                  <td>
+                    <button onClick={() => onPredict(t)} disabled={loading} style={{ padding: '4px 10px', fontSize: 10 }}>
+                      {loading ? 'running...' : 'predict'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   )
 }
