@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Header } from './components/Header'
 import { TabNav } from './components/TabNav'
 import { StatusPanels } from './components/StatusPanels'
@@ -106,7 +107,13 @@ function App() {
         counts={{ datasets: datasets.length, targets: targets.length, predictions: predictions.length }}
       />
 
-      <div className="main-area">
+      <motion.div
+        className="main-area"
+        key={tab}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      >
         <StatusPanels
           datasets={datasets}
           targets={targets}
@@ -115,29 +122,55 @@ function App() {
           dataLoading={dataLoading}
         />
 
-        {tab === 'datasets' && (
-          <DatasetList datasets={datasets} empty={datasets.length === 0} />
-        )}
+        <AnimatePresence mode="wait">
+          {tab === 'datasets' && (
+            <motion.div
+              key="datasets"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <DatasetList datasets={datasets} empty={datasets.length === 0} />
+            </motion.div>
+          )}
 
-        {tab === 'targets' && (
-          <TargetList
-            targets={targets}
-            newTarget={newTarget}
-            loading={predictLoading}
-            onNewTargetChange={setNewTarget}
-            onCreateTarget={handleCreateTarget}
-            onPredict={handlePredict}
-          />
-        )}
+          {tab === 'targets' && (
+            <motion.div
+              key="targets"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <TargetList
+                targets={targets}
+                newTarget={newTarget}
+                loading={predictLoading}
+                onNewTargetChange={setNewTarget}
+                onCreateTarget={handleCreateTarget}
+                onPredict={handlePredict}
+              />
+            </motion.div>
+          )}
 
-        {tab === 'predictions' && (
-          <PredictionView
-            selectedTarget={selectedTarget}
-            predictions={predictions}
-            chartData={chartData}
-          />
-        )}
-      </div>
+          {tab === 'predictions' && (
+            <motion.div
+              key="predictions"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <PredictionView
+                selectedTarget={selectedTarget}
+                predictions={predictions}
+                chartData={chartData}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <footer className="statusbar">
         <div className="statusbar-left">

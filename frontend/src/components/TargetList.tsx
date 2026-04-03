@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { CATEGORY_LABELS } from '../types'
 import type { Target as TargetType } from '../types'
 
@@ -28,7 +29,12 @@ export function TargetList({
       <div className="section-header">
         <span className="section-title">New Target</span>
       </div>
-      <div className="form">
+      <motion.div
+        className="form"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
         <input
           placeholder="Question, e.g. Will China CPI exceed 2% next year?"
           value={newTarget.question}
@@ -57,13 +63,20 @@ export function TargetList({
           value={newTarget.outcomes}
           onChange={e => onNewTargetChange({ ...newTarget, outcomes: e.target.value })}
         />
-        <button
+        <motion.button
           onClick={onCreateTarget}
           disabled={!newTarget.question || !newTarget.outcomes}
+          whileTap={{ scale: 0.97 }}
+          animate={
+            newTarget.question && newTarget.outcomes
+              ? { boxShadow: ['0 0 12px rgba(0,245,212,0.15)', '0 0 20px rgba(0,245,212,0.3)', '0 0 12px rgba(0,245,212,0.15)'] }
+              : {}
+          }
+          transition={{ duration: 2, repeat: Infinity }}
         >
           Create Target
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <div style={{ marginTop: 16 }}>
         <div className="section-header">
@@ -71,7 +84,14 @@ export function TargetList({
           <span className="section-action">{targets.length} total</span>
         </div>
         {targets.length === 0 ? (
-          <div className="empty">No targets yet.</div>
+          <motion.div
+            className="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+          >
+            No targets yet.
+          </motion.div>
         ) : (
           <table className="data-table">
             <thead>
@@ -84,8 +104,13 @@ export function TargetList({
               </tr>
             </thead>
             <tbody>
-              {targets.map(t => (
-                <tr key={t.id}>
+              {targets.map((t, i) => (
+                <motion.tr
+                  key={t.id}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td style={{ fontWeight: 500, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.question}</td>
                   <td><span className="badge secondary">{t.category}</span></td>
                   <td>{t.horizon_days}d</td>
@@ -95,11 +120,20 @@ export function TargetList({
                     </span>
                   </td>
                   <td>
-                    <button onClick={() => onPredict(t)} disabled={loading} style={{ padding: '4px 10px', fontSize: 10 }}>
+                    <motion.button
+                      onClick={() => onPredict(t)}
+                      disabled={loading}
+                      style={{ padding: '4px 10px', fontSize: 10 }}
+                      whileTap={{ scale: 0.95 }}
+                      animate={loading ? {
+                        opacity: [0.6, 1, 0.6],
+                      } : {}}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
                       {loading ? 'running...' : 'predict'}
-                    </button>
+                    </motion.button>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
