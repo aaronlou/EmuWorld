@@ -1,4 +1,6 @@
 import { Suspense, lazy, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+
 import { ChatWidget } from './components/ChatWidget'
 import { Header } from './components/Header'
 import { TabNav } from './components/TabNav'
@@ -11,10 +13,17 @@ import type { ChatContext, Dataset } from './types'
 import './App.css'
 
 type Tab = 'datasets' | 'targets' | 'predictions'
+const pageEase = [0.16, 1, 0.3, 1] as const
 
-const DatasetList = lazy(async () => import('./features/datasets/DatasetList').then((module) => ({ default: module.DatasetList })))
-const TargetList = lazy(async () => import('./features/targets/TargetList').then((module) => ({ default: module.TargetList })))
-const PredictionView = lazy(async () => import('./features/predictions/PredictionView').then((module) => ({ default: module.PredictionView })))
+const DatasetList = lazy(async () =>
+  import('./features/datasets/DatasetList').then((module) => ({ default: module.DatasetList })),
+)
+const TargetList = lazy(async () =>
+  import('./features/targets/TargetList').then((module) => ({ default: module.TargetList })),
+)
+const PredictionView = lazy(async () =>
+  import('./features/predictions/PredictionView').then((module) => ({ default: module.PredictionView })),
+)
 
 function App() {
   const [tab, setTab] = useState<Tab>('datasets')
@@ -62,9 +71,15 @@ function App() {
     datasets_count: datasets.length,
     targets_count: targets.length,
     predictions_count: predictions.length,
-    dataset_catalog: datasets.slice(0, 10).map((dataset) => `${dataset.name} (${dataset.source}, ${dataset.category})`),
-    target_catalog: targets.slice(0, 6).map((target) => `${target.question} [${target.horizon_days}d]`),
-    prediction_catalog: predictions.slice(0, 6).map((prediction) => `${prediction.outcome}: ${(prediction.probability * 100).toFixed(1)}%`),
+    dataset_catalog: datasets
+      .slice(0, 10)
+      .map((dataset) => `${dataset.name} (${dataset.source}, ${dataset.category})`),
+    target_catalog: targets
+      .slice(0, 6)
+      .map((target) => `${target.question} [${target.horizon_days}d]`),
+    prediction_catalog: predictions
+      .slice(0, 6)
+      .map((prediction) => `${prediction.outcome}: ${(prediction.probability * 100).toFixed(1)}%`),
     dataset_series_summary: [],
     target_outcomes: [],
     prediction_distribution: [],
@@ -102,15 +117,26 @@ function App() {
       <div className="aurora-orb aurora-orb-1" />
       <div className="aurora-orb aurora-orb-2" />
       <div className="aurora-orb aurora-orb-3" />
+
       <Header datasets={datasets} predictions={predictions} dataLoading={dataLoading} />
 
       <TabNav
         tab={tab}
         onTabChange={setTab}
-        counts={{ datasets: datasets.length, targets: targets.length, predictions: predictions.length }}
+        counts={{
+          datasets: datasets.length,
+          targets: targets.length,
+          predictions: predictions.length,
+        }}
       />
 
-      <div className="main-area">
+      <motion.div
+        className="main-area"
+        key={tab}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: pageEase }}
+      >
         <StatusPanels
           datasets={datasets}
           targets={targets}
@@ -119,45 +145,71 @@ function App() {
           dataLoading={dataLoading}
         />
 
-        {tab === 'datasets' && (
-          <Suspense fallback={<div className="empty">Loading datasets...</div>}>
-            <DatasetList
-              datasets={datasets}
-              empty={datasets.length === 0}
-              onSelectionChange={setSelectedDataset}
-            />
-          </Suspense>
-        )}
+        <AnimatePresence mode="wait">
+          {tab === 'datasets' && (
+            <motion.div
+              key="datasets"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: pageEase }}
+            >
+              <Suspense fallback={<div className="empty">Loading datasets...</div>}>
+                <DatasetList
+                  datasets={datasets}
+                  empty={datasets.length === 0}
+                  onSelectionChange={setSelectedDataset}
+                />
+              </Suspense>
+            </motion.div>
+          )}
 
-        {tab === 'targets' && (
-          <Suspense fallback={<div className="empty">Loading targets...</div>}>
-            <TargetList
-              targets={targets}
-              newTarget={newTarget}
-              loading={predictLoading}
-              latestRunsByTarget={latestRunsByTarget}
-              onNewTargetChange={setNewTarget}
-              onCreateTarget={handleCreateTarget}
-              onPredict={handlePredict}
-            />
-          </Suspense>
-        )}
+          {tab === 'targets' && (
+            <motion.div
+              key="targets"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: pageEase }}
+            >
+              <Suspense fallback={<div className="empty">Loading targets...</div>}>
+                <TargetList
+                  targets={targets}
+                  newTarget={newTarget}
+                  loading={predictLoading}
+                  latestRunsByTarget={latestRunsByTarget}
+                  onNewTargetChange={setNewTarget}
+                  onCreateTarget={handleCreateTarget}
+                  onPredict={handlePredict}
+                />
+              </Suspense>
+            </motion.div>
+          )}
 
-        {tab === 'predictions' && (
-          <Suspense fallback={<div className="empty">Loading predictions...</div>}>
-            <PredictionView
-              selectedTarget={selectedTarget}
-              selectedRun={selectedRun}
-              runs={runs}
-              predictions={predictions}
-              chartData={chartData}
-              loading={predictLoading}
-              onRetry={() => selectedTarget ? handlePredict(selectedTarget) : Promise.resolve()}
-              onSelectRun={selectRun}
-            />
-          </Suspense>
-        )}
-      </div>
+          {tab === 'predictions' && (
+            <motion.div
+              key="predictions"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: pageEase }}
+            >
+              <Suspense fallback={<div className="empty">Loading predictions...</div>}>
+                <PredictionView
+                  selectedTarget={selectedTarget}
+                  selectedRun={selectedRun}
+                  runs={runs}
+                  predictions={predictions}
+                  chartData={chartData}
+                  loading={predictLoading}
+                  onRetry={() => (selectedTarget ? handlePredict(selectedTarget) : Promise.resolve())}
+                  onSelectRun={selectRun}
+                />
+              </Suspense>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <footer className="statusbar">
         <div className="statusbar-left">
