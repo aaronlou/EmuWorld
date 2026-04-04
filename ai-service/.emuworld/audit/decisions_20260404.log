@@ -1,0 +1,18 @@
+{"event": "pre_execute", "stage": null, "timestamp": 1775262598.0368829}
+{"event": "post_execute", "stage": null, "timestamp": 1775262598.058003, "stage_results_count": 7}
+{"event": "pre_execute", "stage": null, "timestamp": 1775262686.920202}
+{"event": "post_execute", "stage": null, "timestamp": 1775262686.938027, "stage_results_count": 7}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264501.1597388}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264568.723486}
+{"event": "post_execute", "stage": null, "timestamp": 1775264574.614352, "stage_results_count": 7}
+{"event": "post_execute", "stage": null, "timestamp": 1775264624.948171, "stage_results_count": 7}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264672.8957062}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264705.025035}
+{"event": "post_execute", "stage": null, "timestamp": 1775264719.57774, "stage_results_count": 4}
+{"event": "post_execute", "stage": null, "timestamp": 1775264736.171747, "stage_results_count": 4}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264912.553061}
+{"event": "post_execute", "stage": null, "timestamp": 1775264930.77553, "stage_results_count": 4}
+{"event": "pre_execute", "stage": null, "timestamp": 1775264937.078475}
+{"event": "post_execute", "stage": null, "timestamp": 1775264954.587758, "stage_results_count": 4}
+{"event": "pre_execute", "stage": null, "timestamp": 1775265064.581453}
+{"event": "post_execute", "stage": null, "timestamp": 1775265072.022725, "stage_results_count": 6}

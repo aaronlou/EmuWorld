@@ -1,0 +1,11 @@
+{
+  "question": "GDP趋势如何？",
+  "final_stage": 6,
+  "final_status": "succeed",
+  "total_duration_ms": 7429.057750967331,
+  "stages_completed": 5,
+  "stages_failed": 1,
+  "rollback_count": 0,
+  "started_at": "2026-04-04T01:11:04.581463+00:00",
+  "finished_at": "2026-04-04T01:11:12.020358+00:00"
+}

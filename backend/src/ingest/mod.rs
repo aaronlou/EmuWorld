@@ -16,8 +16,6 @@ pub struct Observation {
 #[async_trait]
 pub trait DataSource: Send + Sync {
     fn name(&self) -> &str;
-    fn base_url(&self) -> &str;
-    fn api_key(&self) -> &str;
 
     async fn fetch_series(
         &self,

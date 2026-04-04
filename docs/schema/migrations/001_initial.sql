@@ -64,12 +64,29 @@ CREATE TABLE IF NOT EXISTS prediction_targets (
 );
 
 -- ============================================================================
--- 5. Predictions
+-- 5. Prediction Runs
+--    Execution records for each forecasting attempt
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS prediction_runs (
+    id             SERIAL PRIMARY KEY,
+    target_id      INTEGER NOT NULL REFERENCES prediction_targets(id) ON DELETE CASCADE,
+    status         TEXT NOT NULL,              -- "running", "completed", "failed"
+    model_version  TEXT NOT NULL DEFAULT 'v1',
+    input_snapshot TEXT NOT NULL,              -- JSON snapshot of prompt inputs
+    error_message  TEXT,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at     TIMESTAMPTZ,
+    finished_at    TIMESTAMPTZ
+);
+
+-- ============================================================================
+-- 6. Predictions
 --    Forecast results with probability and confidence intervals
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS predictions (
     id                 SERIAL PRIMARY KEY,
     target_id          INTEGER NOT NULL REFERENCES prediction_targets(id) ON DELETE CASCADE,
+    run_id             INTEGER REFERENCES prediction_runs(id) ON DELETE CASCADE,
     outcome            TEXT NOT NULL,
     probability        DOUBLE PRECISION NOT NULL,
     confidence_lower   DOUBLE PRECISION NOT NULL,
@@ -83,6 +100,8 @@ CREATE TABLE IF NOT EXISTS predictions (
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_data_points_dataset_id    ON data_points(dataset_id);
 CREATE INDEX IF NOT EXISTS idx_datasets_source_external  ON datasets(source, external_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_runs_target_id ON prediction_runs(target_id);
 CREATE INDEX IF NOT EXISTS idx_predictions_target_id     ON predictions(target_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_run_id        ON predictions(run_id);
 
 COMMIT;

@@ -1,0 +1,79 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: EMUWORLD
+        - generic [ref=e7]: │
+        - generic [ref=e8]: MACRO QUANT ENGINE
+        - generic [ref=e9]: │
+        - generic [ref=e10]: 24 src
+      - generic [ref=e11]:
+        - generic [ref=e14]: LIVE
+        - generic [ref=e15]: Apr 4 10:21:53
+    - navigation [ref=e16]:
+      - button "Datasets 24" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+        - text: Datasets
+        - generic [ref=e22]: "24"
+      - button "Targets 0" [active] [ref=e23] [cursor=pointer]:
+        - img [ref=e24]
+        - text: Targets
+        - generic [ref=e28]: "0"
+      - button "Predictions 0" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+        - text: Predictions
+        - generic [ref=e33]: "0"
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - article [ref=e36]:
+          - generic [ref=e37]: Data Sources
+          - generic [ref=e38]: "3"
+          - generic [ref=e39]: 24 datasets
+        - article [ref=e40]:
+          - generic [ref=e41]: Targets
+          - generic [ref=e42]: "0"
+          - generic [ref=e43]: idle
+        - article [ref=e44]:
+          - generic [ref=e45]: Forecast Window
+          - generic [ref=e46]: 90d
+          - generic [ref=e47]: no prediction yet
+        - article [ref=e48]:
+          - generic [ref=e49]: Engine Status
+          - generic [ref=e50]: OK
+          - generic [ref=e51]: all systems nominal
+      - generic [ref=e441]:
+        - generic [ref=e443]:
+          - generic [ref=e444]: Forecast target design
+          - heading "Define decision questions before the engine prices them." [level=1] [ref=e445]
+          - paragraph [ref=e446]: Draft the question, set the horizon, then launch runs from the target registry.
+        - generic [ref=e447]:
+          - article [ref=e448]:
+            - generic [ref=e449]:
+              - generic [ref=e450]: Create target
+              - generic [ref=e451]: question / horizon / outcomes
+            - generic [ref=e452]:
+              - textbox "Question, e.g. Will China CPI exceed 2% next year?" [ref=e453]
+              - generic [ref=e454]:
+                - combobox [ref=e455] [cursor=pointer]:
+                  - option "宏观经济" [selected]
+                  - option "房地产"
+                  - option "就业"
+                  - option "利率"
+                  - option "进出口"
+                - spinbutton [ref=e456]: "90"
+              - textbox "Outcomes, comma separated, e.g. yes,no,uncertain" [ref=e457]
+              - button "Create Target" [disabled] [ref=e458]
+          - article [ref=e459]:
+            - generic [ref=e460]:
+              - generic [ref=e461]: Target registry
+              - generic [ref=e462]: 0 total
+            - generic [ref=e463]: No targets yet.
+    - contentinfo [ref=e411]:
+      - generic [ref=e412]:
+        - generic [ref=e413]: connected
+        - generic [ref=e415]: 24 datasets
+        - generic [ref=e416]: 0 targets
+      - generic [ref=e417]:
+        - generic [ref=e418]: v0.1.0
+        - generic [ref=e419]: EMUWORLD ENGINE
+  - generic [ref=e420]: world bank

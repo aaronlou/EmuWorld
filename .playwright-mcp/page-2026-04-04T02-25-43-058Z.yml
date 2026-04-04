@@ -1,0 +1,51 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: EMUWORLD
+      - generic [ref=e7]: │
+      - generic [ref=e8]: MACRO QUANT ENGINE
+      - generic [ref=e9]: │
+      - generic [ref=e10]: 24 src
+    - generic [ref=e11]:
+      - generic [ref=e14]: LIVE
+      - generic [ref=e15]: Apr 4 10:25:43
+  - navigation [ref=e16]:
+    - button "Datasets 24" [ref=e17] [cursor=pointer]:
+      - img [ref=e18]
+      - text: Datasets
+      - generic [ref=e22]: "24"
+    - button "Targets 0" [ref=e23] [cursor=pointer]:
+      - img [ref=e24]
+      - text: Targets
+      - generic [ref=e28]: "0"
+    - button "Predictions 0" [ref=e29] [cursor=pointer]:
+      - img [ref=e30]
+      - text: Predictions
+      - generic [ref=e33]: "0"
+  - generic [ref=e34]:
+    - generic [ref=e35]:
+      - article [ref=e36]:
+        - generic [ref=e37]: Data Sources
+        - generic [ref=e38]: "3"
+        - generic [ref=e39]: 24 datasets
+      - article [ref=e40]:
+        - generic [ref=e41]: Targets
+        - generic [ref=e42]: "0"
+        - generic [ref=e43]: idle
+      - article [ref=e44]:
+        - generic [ref=e45]: Forecast Window
+        - generic [ref=e46]: 90d
+        - generic [ref=e47]: no prediction yet
+      - article [ref=e48]:
+        - generic [ref=e49]: Engine Status
+        - generic [ref=e50]: OK
+        - generic [ref=e51]: all systems nominal
+    - generic [ref=e52]: Loading datasets...
+  - contentinfo [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e55]: connected
+      - generic [ref=e57]: 24 datasets
+      - generic [ref=e58]: 0 targets
+    - generic [ref=e59]:
+      - generic [ref=e60]: v0.1.0
+      - generic [ref=e61]: EMUWORLD ENGINE

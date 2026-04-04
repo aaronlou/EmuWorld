@@ -1,9 +1,9 @@
 use axum::{extract::State, routing::{get, post, delete}, Json, Router};
 use std::sync::Arc;
 
-use crate::repo::{AppRepo, CreateDataset};
+use crate::{api::errors::ApiResult, bootstrap::app_state::AppState, repo::CreateDataset};
 
-pub fn router() -> Router<Arc<dyn AppRepo>> {
+pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/datasets", get(list_datasets))
         .route("/datasets", post(add_dataset))
@@ -12,36 +12,29 @@ pub fn router() -> Router<Arc<dyn AppRepo>> {
 }
 
 async fn list_datasets(
-    State(repo): State<Arc<dyn AppRepo>>,
-) -> Result<Json<Vec<crate::models::Dataset>>, (axum::http::StatusCode, String)> {
-    repo.list_datasets().await
-        .map(Json)
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<Vec<crate::models::Dataset>> {
+    Ok(Json(state.repo.list_datasets().await?))
 }
 
 async fn add_dataset(
-    State(repo): State<Arc<dyn AppRepo>>,
+    State(state): State<Arc<AppState>>,
     Json(dataset): Json<CreateDataset>,
-) -> Result<Json<crate::models::Dataset>, (axum::http::StatusCode, String)> {
-    repo.create_dataset(&dataset).await
-        .map(Json)
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+) -> ApiResult<crate::models::Dataset> {
+    Ok(Json(state.repo.create_dataset(&dataset).await?))
 }
 
 async fn delete_dataset(
-    State(repo): State<Arc<dyn AppRepo>>,
+    State(state): State<Arc<AppState>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
-) -> Result<Json<()>, (axum::http::StatusCode, String)> {
-    repo.delete_dataset(id).await
-        .map(|_| Json(()))
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+) -> ApiResult<()> {
+    state.repo.delete_dataset(id).await?;
+    Ok(Json(()))
 }
 
 async fn get_data_points(
-    State(repo): State<Arc<dyn AppRepo>>,
+    State(state): State<Arc<AppState>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
-) -> Result<Json<Vec<crate::models::DataPoint>>, (axum::http::StatusCode, String)> {
-    repo.data_points(id).await
-        .map(Json)
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+) -> ApiResult<Vec<crate::models::DataPoint>> {
+    Ok(Json(state.repo.data_points(id).await?))
 }

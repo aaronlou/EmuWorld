@@ -3,6 +3,8 @@ use tower_http::cors::CorsLayer;
 use std::sync::Arc;
 
 mod api;
+mod application;
+mod bootstrap;
 mod models;
 mod repo;
 mod ingest;
@@ -16,18 +18,24 @@ async fn main() {
     tracing::info!("Connecting to PostgreSQL: {}", db_url);
     let pool = repo::init_pool(&db_url).await.expect("Failed to connect to PostgreSQL");
 
-    repo::postgres::run_migrations(&pool).await.expect("Failed to run migrations");
+    repo::postgres::migrations::run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
 
     let repo: Arc<dyn repo::AppRepo> = Arc::new(repo::postgres::PostgresRepo::new(pool));
+    let ai_service_url =
+        std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://localhost:9000".to_string());
+    let state = Arc::new(bootstrap::app_state::AppState::new(repo, ai_service_url));
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
+        .merge(api::chat::router())
         .merge(api::datasets::router())
         .merge(api::predictions::router())
         .merge(api::targets::router())
         .merge(api::sources::router())
         .layer(CorsLayer::permissive())
-        .with_state(repo);
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     tracing::info!("listening on 0.0.0.0:8080");

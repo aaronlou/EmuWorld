@@ -3,7 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::{CreateTargetRequest, DataPoint, Dataset, DataSource, Prediction, PredictionResponse, PredictionTarget};
+use crate::models::{ChatMessageRecord, ChatSession, CreateTargetRequest, DataPoint, Dataset, DataSource, Prediction, PredictionRun, PredictionTarget};
 
 pub mod postgres;
 
@@ -28,14 +28,6 @@ pub struct CreateDataset {
     pub category: String,
     pub external_id: Option<String>,
     pub description: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UpdateDataset {
-    pub name: Option<String>,
-    pub category: Option<String>,
-    pub external_id: Option<String>,
-    pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,16 +58,39 @@ pub struct CreateDataPoint {
 #[derive(Debug, Deserialize)]
 pub struct CreatePrediction {
     pub target_id: i64,
+    pub run_id: i64,
     pub outcome: String,
     pub probability: f64,
     pub confidence_lower: f64,
     pub confidence_upper: f64,
 }
 
+#[derive(Debug)]
+pub struct CreatePredictionRun {
+    pub target_id: i64,
+    pub status: String,
+    pub model_version: String,
+    pub input_snapshot: String,
+}
+
+#[derive(Debug)]
+pub struct CreateChatSession {
+    pub title: String,
+}
+
+#[derive(Debug)]
+pub struct CreateChatMessage {
+    pub session_id: i64,
+    pub role: String,
+    pub content: String,
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    pub used_fallback: bool,
+}
+
 #[async_trait]
 pub trait DatasetRepo: Send + Sync {
     async fn list_datasets(&self) -> Result<Vec<Dataset>>;
-    async fn get_dataset(&self, id: i64) -> Result<Option<Dataset>>;
     async fn create_dataset(&self, dataset: &CreateDataset) -> Result<Dataset>;
     async fn delete_dataset(&self, id: i64) -> Result<()>;
     async fn data_points(&self, dataset_id: i64) -> Result<Vec<DataPoint>>;
@@ -94,25 +109,35 @@ pub trait TargetRepo: Send + Sync {
 #[async_trait]
 pub trait PredictionRepo: Send + Sync {
     async fn list_by_target(&self, target_id: i64) -> Result<Vec<Prediction>>;
+    async fn list_by_run(&self, run_id: i64) -> Result<Vec<Prediction>>;
+    async fn list_runs_by_target(&self, target_id: i64) -> Result<Vec<PredictionRun>>;
+    async fn list_latest_runs(&self) -> Result<Vec<PredictionRun>>;
+    async fn get_run(&self, run_id: i64) -> Result<Option<PredictionRun>>;
+    async fn create_run(&self, run: &CreatePredictionRun) -> Result<PredictionRun>;
+    async fn mark_run_completed(&self, run_id: i64) -> Result<PredictionRun>;
+    async fn mark_run_failed(&self, run_id: i64, error_message: &str) -> Result<PredictionRun>;
     async fn create_batch(&self, target_id: i64, predictions: &[CreatePrediction]) -> Result<()>;
-    async fn generate(
-        &self,
-        target_id: i64,
-        ai_service_url: &str,
-    ) -> Result<PredictionResponse>;
 }
 
 #[async_trait]
 pub trait DataSourceRepo: Send + Sync {
     async fn list_sources(&self) -> Result<Vec<DataSource>>;
     async fn get_source(&self, id: i64) -> Result<Option<DataSource>>;
-    async fn get_source_by_name(&self, name: &str) -> Result<Option<DataSource>>;
     async fn create_source(&self, source: &CreateDataSource) -> Result<DataSource>;
     async fn update_source(&self, id: i64, updates: &UpdateDataSource) -> Result<DataSource>;
     async fn delete_source(&self, id: i64) -> Result<()>;
 }
 
-pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo {}
+#[async_trait]
+pub trait ChatRepo: Send + Sync {
+    async fn create_chat_session(&self, session: &CreateChatSession) -> Result<ChatSession>;
+    async fn get_chat_session(&self, id: i64) -> Result<Option<ChatSession>>;
+    async fn list_chat_messages(&self, session_id: i64) -> Result<Vec<ChatMessageRecord>>;
+    async fn create_chat_message(&self, message: &CreateChatMessage) -> Result<ChatMessageRecord>;
+    async fn touch_chat_session(&self, session_id: i64) -> Result<()>;
+}
+
+pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo + ChatRepo {}
 
 pub async fn init_pool(db_url: &str) -> Result<PgPool> {
     sqlx::PgPool::connect(db_url)

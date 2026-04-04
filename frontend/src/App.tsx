@@ -1,96 +1,100 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Suspense, lazy, useState } from 'react'
+import { ChatWidget } from './components/ChatWidget'
 import { Header } from './components/Header'
 import { TabNav } from './components/TabNav'
 import { StatusPanels } from './components/StatusPanels'
-import { DatasetList } from './components/DatasetList'
-import { TargetList } from './components/TargetList'
-import { PredictionView } from './components/PredictionView'
 import { ParticleBackground } from './components/ParticleBackground'
-import { api } from './services/api'
-import type { Dataset, Target, Prediction, CreateTargetRequest } from './types'
+import { useDatasets } from './features/datasets/hooks'
+import { useTargets } from './features/targets/hooks'
+import { usePredictionRunner, useTargetRunSummaries } from './features/predictions/hooks'
+import type { ChatContext, Dataset } from './types'
 import './App.css'
 
 type Tab = 'datasets' | 'targets' | 'predictions'
 
-interface ChartDataPoint {
-  name: string
-  value: number
-  lower: number
-  upper: number
-  fill: string
-}
+const DatasetList = lazy(async () => import('./features/datasets/DatasetList').then((module) => ({ default: module.DatasetList })))
+const TargetList = lazy(async () => import('./features/targets/TargetList').then((module) => ({ default: module.TargetList })))
+const PredictionView = lazy(async () => import('./features/predictions/PredictionView').then((module) => ({ default: module.PredictionView })))
 
 function App() {
   const [tab, setTab] = useState<Tab>('datasets')
-  const [datasets, setDatasets] = useState<Dataset[]>([])
-  const [targets, setTargets] = useState<Target[]>([])
-  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
-  const [predictions, setPredictions] = useState<Prediction[]>([])
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
-  const [dataLoading, setDataLoading] = useState(true)
-  const [predictLoading, setPredictLoading] = useState(false)
-  const [newTarget, setNewTarget] = useState({
-    question: '',
-    category: 'macro',
-    horizon_days: 90,
-    outcomes: '',
-  })
+  const { datasets, loading: datasetsLoading } = useDatasets()
+  const { targets, createTarget, emptyDraft } = useTargets()
+  const {
+    selectedTarget,
+    selectedRun,
+    runs,
+    predictions,
+    chartData,
+    loading: predictLoading,
+    selectRun,
+    runPrediction,
+  } = usePredictionRunner()
+  const { latestRunsByTarget, setLatestRun } = useTargetRunSummaries(targets)
+  const [newTarget, setNewTarget] = useState(emptyDraft)
+  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null)
+  const dataLoading = datasetsLoading
 
-  const fetchData = useCallback(() => {
-    setDataLoading(true)
-    Promise.all([api.datasets.list(), api.targets.list()])
-      .then(([d, t]) => {
-        setDatasets(d)
-        setTargets(t)
-      })
-      .catch(() => {
-        setDatasets([])
-        setTargets([])
-      })
-      .finally(() => setDataLoading(false))
-  }, [])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const handleCreateTarget = useCallback(() => {
-    if (!newTarget.question || !newTarget.outcomes) return
-    const outcomes = newTarget.outcomes.split(',').map(s => s.trim()).filter(Boolean)
-    if (outcomes.length === 0) return
-
-    const req: CreateTargetRequest = {
-      question: newTarget.question,
-      category: newTarget.category,
-      horizon_days: newTarget.horizon_days,
-      outcomes,
+  async function handleCreateTarget() {
+    try {
+      const created = await createTarget(newTarget)
+      if (created) {
+        setNewTarget(emptyDraft)
+        setLatestRun(created.id, null)
+      }
+    } catch (error) {
+      console.error(error)
     }
+  }
 
-    api.targets.create(req)
-      .then(target => {
-        setTargets(prev => [target, ...prev])
-        setNewTarget({ question: '', category: 'macro', horizon_days: 90, outcomes: '' })
-      })
-      .catch(console.error)
-  }, [newTarget])
+  async function handlePredict(target: Parameters<typeof runPrediction>[0]) {
+    try {
+      const response = await runPrediction(target)
+      setLatestRun(target.id, response.run)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
-  const handlePredict = useCallback((target: Target) => {
-    setPredictLoading(true)
-    api.targets.predict(target.id)
-      .then(response => {
-        setPredictions(response.predictions)
-        setSelectedTarget(response.target)
-        setChartData(response.predictions.map((p) => ({
-          name: p.outcome,
-          value: p.probability * 100,
-          lower: p.confidence_lower * 100,
-          upper: p.confidence_upper * 100,
-          fill: '',
-        })))
-      })
-      .catch(console.error)
-      .finally(() => setPredictLoading(false))
-  }, [])
+  const topPrediction = predictions[0] ?? null
+  const chatContext: ChatContext = {
+    page: tab,
+    datasets_count: datasets.length,
+    targets_count: targets.length,
+    predictions_count: predictions.length,
+    dataset_catalog: datasets.slice(0, 10).map((dataset) => `${dataset.name} (${dataset.source}, ${dataset.category})`),
+    target_catalog: targets.slice(0, 6).map((target) => `${target.question} [${target.horizon_days}d]`),
+    prediction_catalog: predictions.slice(0, 6).map((prediction) => `${prediction.outcome}: ${(prediction.probability * 100).toFixed(1)}%`),
+    dataset_series_summary: [],
+    target_outcomes: [],
+    prediction_distribution: [],
+    dataset: selectedDataset
+      ? {
+          id: selectedDataset.id,
+          name: selectedDataset.name,
+          source: selectedDataset.source,
+          category: selectedDataset.category,
+          description: selectedDataset.description,
+        }
+      : null,
+    target: selectedTarget
+      ? {
+          id: selectedTarget.id,
+          question: selectedTarget.question,
+          category: selectedTarget.category,
+          horizon_days: selectedTarget.horizon_days,
+        }
+      : null,
+    prediction: selectedRun
+      ? {
+          run_id: selectedRun.id,
+          status: selectedRun.status,
+          model_version: selectedRun.model_version,
+          top_outcome: topPrediction?.outcome ?? null,
+          top_probability: topPrediction ? topPrediction.probability * 100 : null,
+        }
+      : null,
+  }
 
   return (
     <div className="app scanlines grid-overlay">
@@ -116,26 +120,42 @@ function App() {
         />
 
         {tab === 'datasets' && (
-          <DatasetList datasets={datasets} empty={datasets.length === 0} />
+          <Suspense fallback={<div className="empty">Loading datasets...</div>}>
+            <DatasetList
+              datasets={datasets}
+              empty={datasets.length === 0}
+              onSelectionChange={setSelectedDataset}
+            />
+          </Suspense>
         )}
 
         {tab === 'targets' && (
-          <TargetList
-            targets={targets}
-            newTarget={newTarget}
-            loading={predictLoading}
-            onNewTargetChange={setNewTarget}
-            onCreateTarget={handleCreateTarget}
-            onPredict={handlePredict}
-          />
+          <Suspense fallback={<div className="empty">Loading targets...</div>}>
+            <TargetList
+              targets={targets}
+              newTarget={newTarget}
+              loading={predictLoading}
+              latestRunsByTarget={latestRunsByTarget}
+              onNewTargetChange={setNewTarget}
+              onCreateTarget={handleCreateTarget}
+              onPredict={handlePredict}
+            />
+          </Suspense>
         )}
 
         {tab === 'predictions' && (
-          <PredictionView
-            selectedTarget={selectedTarget}
-            predictions={predictions}
-            chartData={chartData}
-          />
+          <Suspense fallback={<div className="empty">Loading predictions...</div>}>
+            <PredictionView
+              selectedTarget={selectedTarget}
+              selectedRun={selectedRun}
+              runs={runs}
+              predictions={predictions}
+              chartData={chartData}
+              loading={predictLoading}
+              onRetry={() => selectedTarget ? handlePredict(selectedTarget) : Promise.resolve()}
+              onSelectRun={selectRun}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -153,6 +173,8 @@ function App() {
           <span className="statusbar-item">EMUWORLD ENGINE</span>
         </div>
       </footer>
+
+      <ChatWidget context={chatContext} />
     </div>
   )
 }

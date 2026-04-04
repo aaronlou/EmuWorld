@@ -4,12 +4,12 @@ use super::{DataSource, Observation};
 
 pub struct WorldBankSource {
     api_base_url: String,
-    api_key: String,
+    _api_key: String,
 }
 
 impl WorldBankSource {
     pub fn new(api_base_url: String, api_key: String) -> Self {
-        Self { api_base_url, api_key }
+        Self { api_base_url, _api_key: api_key }
     }
 }
 
@@ -17,14 +17,6 @@ impl WorldBankSource {
 impl DataSource for WorldBankSource {
     fn name(&self) -> &str {
         "world_bank"
-    }
-
-    fn base_url(&self) -> &str {
-        &self.api_base_url
-    }
-
-    fn api_key(&self) -> &str {
-        &self.api_key
     }
 
     async fn fetch_series(

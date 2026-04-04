@@ -19,14 +19,6 @@ impl DataSource for FredSource {
         "fred"
     }
 
-    fn base_url(&self) -> &str {
-        &self.api_base_url
-    }
-
-    fn api_key(&self) -> &str {
-        &self.api_key
-    }
-
     async fn fetch_series(
         &self,
         external_id: &str,
