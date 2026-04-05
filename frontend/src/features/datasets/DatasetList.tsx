@@ -271,12 +271,13 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
               <input
                 type="text"
                 className="filter-search-input"
-                placeholder="Search..."
+                placeholder={t('dataset.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label={t('dataset.searchPlaceholder')}
               />
               {searchQuery && (
-                <button className="filter-clear" onClick={() => setSearchQuery('')}>✕</button>
+                <button className="filter-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">✕</button>
               )}
             </div>
             <span className="filter-sep" />
@@ -284,6 +285,7 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
               className="filter-select"
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
+              aria-label="Filter by source"
             >
               <option value="all">All Sources</option>
               {uniqueSources.map(s => (
@@ -294,6 +296,7 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
               className="filter-select"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
+              aria-label="Filter by category"
             >
               <option value="all">All Categories</option>
               {uniqueCategories.map(c => (
@@ -302,7 +305,7 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
             </select>
             {(sourceFilter !== 'all' || categoryFilter !== 'all' || searchQuery) && (
               <button className="filter-clear-btn" onClick={() => { setSourceFilter('all'); setCategoryFilter('all'); setSearchQuery('') }}>
-                Reset
+                {t('dataset.resetFilters')}
               </button>
             )}
           </div>
@@ -327,6 +330,11 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
                     key={d.id}
                     className={selectedDatasetId === d.id ? 'is-selected' : ''}
                     onClick={() => selectDataset(d.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectDataset(d.id) } }}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={selectedDatasetId === d.id}
+                    aria-label={`Select ${d.name}, ${d.source}, ${d.category}`}
                   >
                     <td className="table-primary">{d.name}</td>
                     <td><span className="badge badge-sm">{getCategoryLabel(language, d.category)}</span></td>
@@ -379,7 +387,7 @@ export function DatasetList({ datasets, empty, onSelectionChange }: DatasetListP
                 ) : pointsLoading ? (
                   <div className="empty">{t('dataset.loadingHistory')}</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={240}>
+                    <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={previewPoints} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                       <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                       <XAxis

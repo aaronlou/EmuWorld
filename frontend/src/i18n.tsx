@@ -42,6 +42,10 @@ const translations = {
       noPrediction: 'no prediction yet',
       engineStatus: 'Engine Status',
       allSystemsNominal: 'all systems nominal',
+      expand: 'Expand',
+      collapse: 'Collapse',
+      statusStripLabel: 'Click to expand status panel',
+      statusPanelsLabel: 'Status panels - click to collapse',
     },
     dataset: {
       emptyTitle: 'Data Sources',
@@ -80,6 +84,8 @@ const translations = {
       tableSource: 'Source',
       tableUpdated: 'Updated',
       tableDescription: 'Description',
+      searchPlaceholder: 'Search datasets...',
+      resetFilters: 'Reset filters',
     },
     target: {
       eyebrow: 'Forecast target design',
@@ -222,6 +228,10 @@ const translations = {
       noPrediction: '尚未预测',
       engineStatus: '引擎状态',
       allSystemsNominal: '系统运行正常',
+      expand: '展开',
+      collapse: '收起',
+      statusStripLabel: '点击展开状态面板',
+      statusPanelsLabel: '状态面板 - 点击收起',
     },
     dataset: {
       emptyTitle: '数据源',
@@ -259,6 +269,8 @@ const translations = {
       tableSource: '来源',
       tableUpdated: '更新于',
       tableDescription: '描述',
+      searchPlaceholder: '搜索数据集...',
+      resetFilters: '重置筛选',
     },
     target: {
       eyebrow: '预测目标设计',

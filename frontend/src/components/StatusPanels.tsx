@@ -26,7 +26,7 @@ export function StatusPanels({ datasets, targets, selectedTarget, newTargetHoriz
   const { t } = useI18n()
   const [collapsed, setCollapsed] = useState(true)
   const datasetSources = new Set(datasets.map(d => d.source)).size
-  const activeTargets = targets.reduce((total, t) => total + (t.active ? 1 : 0), 0)
+  const activeTargets = targets.reduce((total, target) => total + (target.active ? 1 : 0), 0)
 
   const cards = [
     {
