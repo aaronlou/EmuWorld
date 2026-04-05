@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Activity } from 'lucide-react'
+import { useI18n } from '../i18n'
 import type { Dataset, Prediction } from '../types'
 
 interface HeaderProps {
@@ -9,6 +10,7 @@ interface HeaderProps {
 }
 
 export function Header({ datasets, predictions, dataLoading }: HeaderProps) {
+  const { language, setLanguage, t, formatDate, formatTime } = useI18n()
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -16,8 +18,8 @@ export function Header({ datasets, predictions, dataLoading }: HeaderProps) {
     return () => clearInterval(timer)
   }, [])
 
-  const timeStr = time.toLocaleTimeString('en-US', { hour12: false })
-  const dateStr = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const timeStr = formatTime(time, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  const dateStr = formatDate(time, { month: 'short', day: 'numeric' })
 
   const [blink, setBlink] = useState(true)
   useEffect(() => {
@@ -38,17 +40,33 @@ export function Header({ datasets, predictions, dataLoading }: HeaderProps) {
           EMUWORLD
         </span>
         <span className="topbar-sep">│</span>
-        <span className="topbar-context">MACRO QUANT ENGINE</span>
+        <span className="topbar-context">{t('header.context')}</span>
         <span className="topbar-sep">│</span>
         <span className="topbar-context">
-          {datasets.length} src
-          {predictions.length > 0 && ` · ${predictions.length} fcst`}
+          {t('header.sourcesShort', { count: datasets.length })}
+          {predictions.length > 0 && ` · ${t('header.forecastsShort', { count: predictions.length })}`}
         </span>
       </div>
       <div className="topbar-right">
+        <div className="language-switch" role="group" aria-label={t('header.language')}>
+          <button
+            className={language === 'en' ? 'active' : ''}
+            onClick={() => setLanguage('en')}
+            type="button"
+          >
+            EN
+          </button>
+          <button
+            className={language === 'zh-CN' ? 'active' : ''}
+            onClick={() => setLanguage('zh-CN')}
+            type="button"
+          >
+            中文
+          </button>
+        </div>
         <div className="topbar-status">
           <span className="status-dot live" />
-          <span>{dataLoading ? 'SYNC' : 'LIVE'}</span>
+          <span>{dataLoading ? t('header.sync') : t('header.live')}</span>
         </div>
         <span className="topbar-time">{dateStr} {timeDisplay}</span>
       </div>

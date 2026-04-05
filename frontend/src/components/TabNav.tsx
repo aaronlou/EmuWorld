@@ -1,24 +1,28 @@
-import { Database, Target, TrendingUp } from 'lucide-react'
+import { Database, Target, TrendingUp, Lightbulb } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useI18n } from '../i18n'
 
-type Tab = 'datasets' | 'targets' | 'predictions'
+type Tab = 'datasets' | 'targets' | 'predictions' | 'knowledge'
 
 interface TabNavProps {
   tab: Tab
   onTabChange: (tab: Tab) => void
-  counts?: { datasets: number; targets: number; predictions: number }
+  counts?: { datasets: number; targets: number; predictions: number; knowledge: number }
 }
 
-const TABS: { key: Tab; label: string; icon: typeof Database }[] = [
-  { key: 'datasets', label: 'Datasets', icon: Database },
-  { key: 'targets', label: 'Targets', icon: Target },
-  { key: 'predictions', label: 'Predictions', icon: TrendingUp },
+const TABS: { key: Tab; labelKey: string; icon: typeof Database }[] = [
+  { key: 'datasets', labelKey: 'tab.datasets', icon: Database },
+  { key: 'targets', labelKey: 'tab.targets', icon: Target },
+  { key: 'predictions', labelKey: 'tab.predictions', icon: TrendingUp },
+  { key: 'knowledge', labelKey: 'tab.knowledge', icon: Lightbulb },
 ]
 
 export function TabNav({ tab, onTabChange, counts }: TabNavProps) {
+  const { t } = useI18n()
+
   return (
     <nav className="tab-bar">
-      {TABS.map(({ key, label, icon: Icon }) => (
+      {TABS.map(({ key, labelKey, icon: Icon }) => (
         <button
           key={key}
           className={tab === key ? 'active' : ''}
@@ -26,7 +30,7 @@ export function TabNav({ tab, onTabChange, counts }: TabNavProps) {
           style={{ position: 'relative', overflow: 'hidden' }}
         >
           <Icon size={12} />
-          {label}
+          {t(labelKey)}
           {counts && <span className="tab-count">{counts[key]}</span>}
           <AnimatePresence>
             {tab === key && (

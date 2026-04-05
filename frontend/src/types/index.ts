@@ -4,6 +4,7 @@ export interface Dataset {
   source: string
   category: string
   description: string
+  external_id: string
   created_at: string
   updated_at: string
 }
@@ -40,7 +41,7 @@ export interface ChatPredictionContext {
 }
 
 export interface ChatContext {
-  page: 'datasets' | 'targets' | 'predictions'
+  page: 'datasets' | 'targets' | 'predictions' | 'knowledge'
   datasets_count: number
   targets_count: number
   predictions_count: number
@@ -141,6 +142,49 @@ export interface CreateTargetRequest {
   outcomes: string[]
 }
 
+export interface Event {
+  id: number
+  title: string
+  date: string
+  category: string
+  description: string
+  tags: string
+  source: string
+  impact_score: number | null
+  created_at: string
+}
+
+export interface Hypothesis {
+  id: number
+  content: string
+  status: 'active' | 'validated' | 'falsified'
+  confidence: number | null
+  resolution_note: string
+  resolved_at: string | null
+  created_at: string
+}
+
+export interface CreateEventRequest {
+  title: string
+  date: string
+  category: string
+  description?: string
+  tags?: string[]
+  source?: string
+  impact_score?: number
+}
+
+export interface CreateHypothesisRequest {
+  content: string
+  confidence?: number
+}
+
+export interface UpdateHypothesisRequest {
+  status?: string
+  confidence?: number
+  resolution_note?: string
+}
+
 export const CATEGORY_ICONS: Record<string, string> = {
   macro: 'Globe',
   real_estate: 'Database',
@@ -149,12 +193,6 @@ export const CATEGORY_ICONS: Record<string, string> = {
   trade: 'Activity',
 }
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  macro: '宏观经济',
-  real_estate: '房地产',
-  employment: '就业',
-  interest_rate: '利率',
-  trade: '进出口',
-}
+export const CATEGORY_KEYS = ['macro', 'real_estate', 'employment', 'interest_rate', 'trade'] as const
 
 export const CHART_COLORS = ['#00f5d4', '#f72585', '#4361ee', '#7209b7', '#06d6a0', '#ffd60a']

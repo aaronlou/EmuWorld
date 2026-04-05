@@ -16,3 +16,5 @@ grpcio-tools==1.70.0
 openai==2.6.1
 psycopg2-binary==2.9.10
 pyyaml==6.0.2
+pytrends>=4.9.2
+yfinance>=0.2.50

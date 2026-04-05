@@ -1,4 +1,5 @@
 import type { PredictionRun, Target as TargetType } from '../../types'
+import { useI18n } from '../../i18n'
 import type { TargetDraft } from './hooks'
 import { CreateTargetForm } from './CreateTargetForm'
 import { TargetTable } from './TargetTable'
@@ -22,15 +23,14 @@ export function TargetList({
   onCreateTarget,
   onPredict,
 }: TargetListProps) {
+  const { t } = useI18n()
+
   return (
     <section className="workspace">
       <div className="workspace-hero workspace-hero-compact">
-        <div className="workspace-copy">
-          <span className="eyebrow">Forecast target design</span>
-          <h1>Define decision questions before the engine prices them.</h1>
-          <p>
-            Draft the question, set the horizon, then launch runs from the target registry.
-          </p>
+        <div className="workspace-copy workspace-copy-inline">
+          <span className="eyebrow">{t('target.eyebrow')}</span>
+          <h1 className="hero-title-compact">{t('target.heroTitle')}</h1>
         </div>
       </div>
 

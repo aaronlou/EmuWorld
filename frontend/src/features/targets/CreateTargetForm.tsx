@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS } from '../../types'
+import { getCategoryLabel, useI18n } from '../../i18n'
+import { CATEGORY_KEYS } from '../../types'
 import type { TargetDraft } from './hooks'
 
 interface CreateTargetFormProps {
@@ -12,15 +13,17 @@ export function CreateTargetForm({
   onNewTargetChange,
   onCreateTarget,
 }: CreateTargetFormProps) {
+  const { language, t } = useI18n()
+
   return (
     <article className="insight-panel form-panel">
       <div className="section-header">
-        <span className="section-title">Create target</span>
-        <span className="section-action">question / horizon / outcomes</span>
+        <span className="section-title">{t('target.createTitle')}</span>
+        <span className="section-action">{t('target.createAction')}</span>
       </div>
       <div className="form">
         <input
-          placeholder="Question, e.g. Will China CPI exceed 2% next year?"
+          placeholder={t('target.questionPlaceholder')}
           value={newTarget.question}
           onChange={e => onNewTargetChange({ ...newTarget, question: e.target.value })}
         />
@@ -29,8 +32,8 @@ export function CreateTargetForm({
             value={newTarget.category}
             onChange={e => onNewTargetChange({ ...newTarget, category: e.target.value })}
           >
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+            {CATEGORY_KEYS.map((key) => (
+              <option key={key} value={key}>{getCategoryLabel(language, key)}</option>
             ))}
           </select>
           <input
@@ -39,11 +42,11 @@ export function CreateTargetForm({
             max="365"
             value={newTarget.horizon_days}
             onChange={e => onNewTargetChange({ ...newTarget, horizon_days: parseInt(e.target.value) })}
-            placeholder="Horizon (days)"
+            placeholder={t('target.horizonPlaceholder')}
           />
         </div>
         <input
-          placeholder="Outcomes, comma separated, e.g. yes,no,uncertain"
+          placeholder={t('target.outcomesPlaceholder')}
           value={newTarget.outcomes}
           onChange={e => onNewTargetChange({ ...newTarget, outcomes: e.target.value })}
         />
@@ -51,7 +54,7 @@ export function CreateTargetForm({
           onClick={onCreateTarget}
           disabled={!newTarget.question || !newTarget.outcomes}
         >
-          Create Target
+          {t('target.createButton')}
         </button>
       </div>
     </article>

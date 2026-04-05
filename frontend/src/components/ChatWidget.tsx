@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MessageSquare, SendHorizontal, Sparkles, X } from 'lucide-react'
 
+import { useI18n } from '../i18n'
 import type { ChatContext } from '../types'
 import { useChatAssistant } from '../features/chat/hooks'
 
@@ -9,6 +10,7 @@ interface ChatWidgetProps {
 }
 
 export function ChatWidget({ context }: ChatWidgetProps) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState('')
   const {
     isOpen,
@@ -36,14 +38,14 @@ export function ChatWidget({ context }: ChatWidgetProps) {
     <>
       <button className={`chat-fab ${isOpen ? 'is-open' : ''}`} onClick={toggle}>
         <MessageSquare size={18} />
-        <span>AI Copilot</span>
+        <span>{t('chat.fab')}</span>
       </button>
 
       {isOpen && (
         <aside className="chat-panel">
           <div className="chat-panel-header">
             <div className="chat-panel-title">
-              <span className="eyebrow">Contextual assistant</span>
+              <span className="eyebrow">{t('chat.eyebrow')}</span>
               <strong>{headerLabel}</strong>
             </div>
             <button className="ghost chat-close" onClick={close}>
@@ -52,9 +54,9 @@ export function ChatWidget({ context }: ChatWidgetProps) {
           </div>
 
           <div className="chat-context-strip">
-            <span>{context.page}</span>
-            <span>{context.datasets_count} datasets</span>
-            <span>{context.targets_count} targets</span>
+            <span>{t(`page.${context.page}`)}</span>
+            <span>{t('app.datasetsCount', { count: context.datasets_count })}</span>
+            <span>{t('app.targetsCount', { count: context.targets_count })}</span>
             <span className="chat-provider-pill">{activeProvider}:{activeModel}</span>
           </div>
 
@@ -62,7 +64,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
             {messages.map((message) => (
               <div key={message.id} className={`chat-message ${message.role}`}>
                 <span className="chat-role">
-                  {message.role === 'assistant' ? 'AI' : 'You'}
+                  {message.role === 'assistant' ? 'AI' : t('chat.you')}
                   {message.role === 'assistant' && message.provider ? ` · ${message.provider}/${message.model}` : ''}
                 </span>
                 <p>
@@ -106,11 +108,11 @@ export function ChatWidget({ context }: ChatWidgetProps) {
               rows={2}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Ask about the current dataset, target, or prediction run..."
+              placeholder={t('chat.placeholder')}
             />
             <button onClick={() => void handleSubmit()} disabled={loading || draft.trim().length === 0}>
               <SendHorizontal size={14} />
-              Send
+              {t('chat.send')}
             </button>
           </div>
         </aside>

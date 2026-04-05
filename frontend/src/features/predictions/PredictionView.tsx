@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
+import { getRunStatusLabel, useI18n } from '../../i18n'
 import type { Target, Prediction, PredictionRun } from '../../types'
 import type { ChartDataPoint } from './hooks'
 
@@ -27,17 +28,6 @@ interface PredictionViewProps {
 
 const AMBER_COLORS = ['#00f5d4', '#f72585', '#4361ee', '#7209b7', '#06d6a0', '#ffd60a']
 
-function formatRunTimestamp(value: string | null) {
-  if (!value) return 'pending'
-  return new Date(value).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
-
 export function PredictionView({
   selectedTarget,
   selectedRun,
@@ -48,9 +38,22 @@ export function PredictionView({
   onRetry,
   onSelectRun,
 }: PredictionViewProps) {
+  const { language, t, formatDateTime } = useI18n()
+
+  function formatRunTimestamp(value: string | null) {
+    if (!value) return t('prediction.pending')
+    return formatDateTime(value, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  }
+
   if (!selectedTarget) {
     return (
-      <div className="empty">No predictions yet. Create a target and run a forecast.</div>
+      <div className="empty">{t('prediction.empty')}</div>
     )
   }
 
@@ -62,21 +65,18 @@ export function PredictionView({
   return (
     <section className="workspace">
       <div className="workspace-hero workspace-hero-compact">
-        <div className="workspace-copy">
-          <span className="eyebrow">Forecast output</span>
-          <h1>{selectedTarget.question}</h1>
-          <p>{selectedTarget.horizon_days} day horizon, live run playback and probability distribution.</p>
-        </div>
-        <div className="hero-metrics">
-          <div className="hero-metric">
-            <span className="hero-metric-label">Selected run</span>
-            <strong>#{selectedRun?.id ?? '—'}</strong>
-            <span>{selectedRun?.status ?? 'awaiting execution'}</span>
-          </div>
-          <div className="hero-metric">
-            <span className="hero-metric-label">Model</span>
-            <strong>{selectedRun?.model_version ?? 'n/a'}</strong>
-            <span>{formatRunTimestamp(selectedRun?.finished_at || selectedRun?.started_at || selectedRun?.created_at || null)}</span>
+        <div className="workspace-copy workspace-copy-inline">
+          <span className="eyebrow">{t('prediction.eyebrow')}</span>
+          <h1 className="hero-title-compact">{selectedTarget.question}</h1>
+          <div className="hero-metrics hero-metrics-inline">
+            <div className="hero-metric hero-metric-pill">
+              <span className="hero-metric-label">{t('prediction.selectedRun')}</span>
+              <strong>#{selectedRun?.id ?? '—'}</strong>
+            </div>
+            <div className="hero-metric hero-metric-pill">
+              <span className="hero-metric-label">{t('prediction.model')}</span>
+              <strong>{selectedRun?.model_version ?? t('misc.na')}</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function PredictionView({
                 disabled={loading}
                 onClick={() => { void onSelectRun(run.id) }}
               >
-                #{run.id} {run.status}
+                #{run.id} {getRunStatusLabel(language, run.status)}
               </button>
             )
           })}
@@ -105,15 +105,15 @@ export function PredictionView({
           onClick={() => { void onRetry() }}
           disabled={loading}
         >
-          {selectedRun?.status === 'failed' ? 'retry failed run' : 'run again'}
+          {selectedRun?.status === 'failed' ? t('prediction.retryFailedRun') : t('prediction.runAgain')}
         </button>
       </div>
 
       <div className="analytics-grid analytics-grid-predictions">
       <article className="insight-panel insight-panel-wide">
         <div className="section-header">
-          <span className="section-title">Outcome profile</span>
-          <span className="section-action">probability by scenario</span>
+          <span className="section-title">{t('prediction.outcomeProfile')}</span>
+          <span className="section-action">{t('prediction.probabilityByScenario')}</span>
         </div>
         <div className="chart-stage chart-stage-large">
         <ResponsiveContainer width="100%" height={240}>
@@ -143,7 +143,7 @@ export function PredictionView({
                 fontSize: 11,
                 boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
               }}
-              formatter={(value: number | string | ReadonlyArray<number | string> | undefined) => [`${Number(value || 0).toFixed(1)}%`, 'prob']}
+              formatter={(value: number | string | ReadonlyArray<number | string> | undefined) => [`${Number(value || 0).toFixed(1)}%`, t('prediction.prob')]}
               labelStyle={{ color: '#e8a838', fontWeight: 600 }}
             />
             <Bar dataKey="value" radius={[3, 3, 0, 0]} animationDuration={600}>
@@ -158,28 +158,28 @@ export function PredictionView({
 
       <article className="insight-panel">
         <div className="section-header">
-          <span className="section-title">Run health</span>
-          <span className="section-action">execution notes</span>
+          <span className="section-title">{t('prediction.runHealth')}</span>
+          <span className="section-action">{t('prediction.executionNotes')}</span>
         </div>
         {selectedRun?.error_message ? (
           <div className="empty prediction-error">
-            Run failed: {selectedRun.error_message}
+            {t('prediction.runFailed', { message: selectedRun.error_message })}
           </div>
         ) : (
           <div className="signal-list compact">
             <div className="signal-item">
               <div>
-                <strong>Status</strong>
-                <span>Current execution state for the selected forecast run.</span>
+                <strong>{t('prediction.status')}</strong>
+                <span>{t('prediction.statusHint')}</span>
               </div>
               <div className="signal-meta">
-                <span className="badge">{selectedRun?.status ?? 'idle'}</span>
+                <span className="badge">{selectedRun ? getRunStatusLabel(language, selectedRun.status) : t('prediction.idle')}</span>
               </div>
             </div>
             <div className="signal-item">
               <div>
-                <strong>Run timestamp</strong>
-                <span>Last activity recorded for this forecast.</span>
+                <strong>{t('prediction.runTimestamp')}</strong>
+                <span>{t('prediction.runTimestampHint')}</span>
               </div>
               <div className="signal-meta">
                 <span className="signal-stamp">{formatRunTimestamp(selectedRun?.finished_at || selectedRun?.started_at || selectedRun?.created_at || null)}</span>
@@ -192,8 +192,8 @@ export function PredictionView({
 
       <article className="insight-panel">
         <div className="section-header">
-          <span className="section-title">Confidence envelope</span>
-          <span className="section-action">lower / midpoint / upper bounds</span>
+          <span className="section-title">{t('prediction.confidenceEnvelope')}</span>
+          <span className="section-action">{t('prediction.bounds')}</span>
         </div>
         <div className="chart-stage chart-stage-large">
           <ResponsiveContainer width="100%" height={240}>
@@ -243,8 +243,8 @@ export function PredictionView({
 
       <article className="insight-panel">
         <div className="section-header">
-          <span className="section-title">Probability ladder</span>
-          <span className="section-action">{predictions.length} modeled outcomes</span>
+          <span className="section-title">{t('prediction.probabilityLadder')}</span>
+          <span className="section-action">{t('prediction.modeledOutcomes', { count: predictions.length })}</span>
         </div>
       <div className="predictions predictions-premium">
         {predictions.map((p, i) => (

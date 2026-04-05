@@ -20,3 +20,4 @@
 [2m2026-04-04T03:12:56.532647Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m84
 [2m2026-04-04T03:14:56.870793Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m27
 [2m2026-04-04T03:20:06.667457Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m36
+[2m2026-04-04T03:39:12.813455Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m42

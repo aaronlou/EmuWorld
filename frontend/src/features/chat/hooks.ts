@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { chatApi } from './api'
+import { useI18n } from '../../i18n'
 import type { ChatContext, ChatMessageRecord } from '../../types'
 
 export interface ChatMessage {
@@ -13,20 +14,20 @@ export interface ChatMessage {
 }
 
 export function useChatAssistant(context: ChatContext) {
+  const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'assistant-welcome',
       role: 'assistant',
-      content:
-        'Open a dataset, target, or forecast run and ask for interpretation. I will use the current page context in every reply.',
+      content: t('chat.welcome'),
     },
   ])
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
-    'Summarize the current workspace for me.',
-    'What should I look at next?',
-    'Explain the most important signal on screen.',
+    t('chat.promptSummary'),
+    t('chat.promptNext'),
+    t('chat.promptSignal'),
   ])
   const [activeProvider, setActiveProvider] = useState<string>('fallback')
   const [activeModel, setActiveModel] = useState<string>('rules')
@@ -111,10 +112,37 @@ export function useChatAssistant(context: ChatContext) {
   }, [sessionId])
 
   const headerLabel = useMemo(() => {
-    if (context.page === 'datasets') return 'Dataset copilot'
-    if (context.page === 'targets') return 'Target copilot'
-    return 'Forecast copilot'
-  }, [context.page])
+    if (context.page === 'datasets') return t('chat.assistantDatasets')
+    if (context.page === 'targets') return t('chat.assistantTargets')
+    return t('chat.assistantPredictions')
+  }, [context.page, t])
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 0) {
+        return prev
+      }
+
+      const [first, ...rest] = prev
+      if (first.id !== 'assistant-welcome') {
+        return prev
+      }
+
+      return [
+        {
+          ...first,
+          content: t('chat.welcome'),
+        },
+        ...rest,
+      ]
+    })
+
+    setSuggestedPrompts([
+      t('chat.promptSummary'),
+      t('chat.promptNext'),
+      t('chat.promptSignal'),
+    ])
+  }, [t])
 
   const sendMessage = useCallback(
     async (message: string) => {
@@ -194,8 +222,8 @@ export function useChatAssistant(context: ChatContext) {
             role: 'assistant',
             content:
               error instanceof Error
-                ? `I could not answer that yet: ${error.message}`
-                : 'I could not answer that yet.',
+                ? t('chat.error', { message: error.message })
+                : t('chat.errorGeneric'),
             provider: 'fallback',
             model: 'error',
             usedFallback: true,
@@ -208,7 +236,7 @@ export function useChatAssistant(context: ChatContext) {
         setLoading(false)
       }
     },
-    [context],
+    [context, sessionId, t],
   )
 
   return {

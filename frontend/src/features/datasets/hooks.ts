@@ -85,6 +85,10 @@ export function useDatasetExplorer(datasets: Dataset[]) {
 
   const selectedDataset = datasets.find((dataset) => dataset.id === selectedDatasetId) ?? null
 
+  const fetchPoints = useCallback(async (datasetId: number) => {
+    return datasetsApi.getPoints(datasetId)
+  }, [])
+
   return {
     selectedDataset,
     selectedDatasetId,
@@ -92,5 +96,6 @@ export function useDatasetExplorer(datasets: Dataset[]) {
     loading,
     error,
     selectDataset: setSelectedDatasetId,
+    fetchPoints,
   }
 }

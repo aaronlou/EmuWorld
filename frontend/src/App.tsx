@@ -9,10 +9,12 @@ import { ParticleBackground } from './components/ParticleBackground'
 import { useDatasets } from './features/datasets/hooks'
 import { useTargets } from './features/targets/hooks'
 import { usePredictionRunner, useTargetRunSummaries } from './features/predictions/hooks'
+import { useEvents, useHypotheses } from './features/knowledge/hooks'
+import { useI18n } from './i18n'
 import type { ChatContext, Dataset } from './types'
 import './App.css'
 
-type Tab = 'datasets' | 'targets' | 'predictions'
+type Tab = 'datasets' | 'targets' | 'predictions' | 'knowledge'
 const pageEase = [0.16, 1, 0.3, 1] as const
 
 const DatasetList = lazy(async () =>
@@ -24,8 +26,12 @@ const TargetList = lazy(async () =>
 const PredictionView = lazy(async () =>
   import('./features/predictions/PredictionView').then((module) => ({ default: module.PredictionView })),
 )
+const KnowledgeView = lazy(async () =>
+  import('./features/knowledge/KnowledgeView').then((module) => ({ default: module.KnowledgeView })),
+)
 
 function App() {
+  const { t } = useI18n()
   const [tab, setTab] = useState<Tab>('datasets')
   const { datasets, loading: datasetsLoading } = useDatasets()
   const { targets, createTarget, emptyDraft } = useTargets()
@@ -40,6 +46,8 @@ function App() {
     runPrediction,
   } = usePredictionRunner()
   const { latestRunsByTarget, setLatestRun } = useTargetRunSummaries(targets)
+  const { events } = useEvents()
+  const { hypotheses } = useHypotheses()
   const [newTarget, setNewTarget] = useState(emptyDraft)
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null)
   const dataLoading = datasetsLoading
@@ -127,6 +135,7 @@ function App() {
           datasets: datasets.length,
           targets: targets.length,
           predictions: predictions.length,
+          knowledge: events.length + hypotheses.length,
         }}
       />
 
@@ -154,7 +163,7 @@ function App() {
               exit={{ opacity: 0, x: 12 }}
               transition={{ duration: 0.3, ease: pageEase }}
             >
-              <Suspense fallback={<div className="empty">Loading datasets...</div>}>
+              <Suspense fallback={<div className="empty">{t('app.loadingDatasets')}</div>}>
                 <DatasetList
                   datasets={datasets}
                   empty={datasets.length === 0}
@@ -172,7 +181,7 @@ function App() {
               exit={{ opacity: 0, x: 12 }}
               transition={{ duration: 0.3, ease: pageEase }}
             >
-              <Suspense fallback={<div className="empty">Loading targets...</div>}>
+              <Suspense fallback={<div className="empty">{t('app.loadingTargets')}</div>}>
                 <TargetList
                   targets={targets}
                   newTarget={newTarget}
@@ -194,7 +203,7 @@ function App() {
               exit={{ opacity: 0, x: 12 }}
               transition={{ duration: 0.3, ease: pageEase }}
             >
-              <Suspense fallback={<div className="empty">Loading predictions...</div>}>
+              <Suspense fallback={<div className="empty">{t('app.loadingPredictions')}</div>}>
                 <PredictionView
                   selectedTarget={selectedTarget}
                   selectedRun={selectedRun}
@@ -208,6 +217,20 @@ function App() {
               </Suspense>
             </motion.div>
           )}
+
+          {tab === 'knowledge' && (
+            <motion.div
+              key="knowledge"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3, ease: pageEase }}
+            >
+              <Suspense fallback={<div className="empty">{t('app.loadingPredictions')}</div>}>
+                <KnowledgeView />
+              </Suspense>
+            </motion.div>
+          )}
         </AnimatePresence>
       </motion.div>
 
@@ -215,14 +238,14 @@ function App() {
         <div className="statusbar-left">
           <span className="statusbar-item">
             <span className="statusbar-dot green" />
-            {dataLoading ? 'syncing' : 'connected'}
+            {dataLoading ? t('app.syncing') : t('app.connected')}
           </span>
-          <span className="statusbar-item">{datasets.length} datasets</span>
-          <span className="statusbar-item">{targets.length} targets</span>
+          <span className="statusbar-item">{t('app.datasetsCount', { count: datasets.length })}</span>
+          <span className="statusbar-item">{t('app.targetsCount', { count: targets.length })}</span>
         </div>
         <div className="statusbar-right">
           <span className="statusbar-item">v0.1.0</span>
-          <span className="statusbar-item">EMUWORLD ENGINE</span>
+          <span className="statusbar-item">{t('app.engineLabel')}</span>
         </div>
       </footer>
 

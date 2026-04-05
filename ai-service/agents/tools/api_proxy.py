@@ -154,6 +154,60 @@ def fetch_nbs_series(code: str) -> SeriesData:
     return SeriesData(id=code, name=name, source="nbs", points=points)
 
 
+def fetch_google_trends_series(keyword: str) -> SeriesData:
+    from pytrends.request import TrendReq
+
+    pytrends = TrendReq(hl="en-US", tz=360, timeout=(10, 15))
+    pytrends.build_payload([keyword], timeframe="today 5-y", geo="")
+    df = pytrends.interest_over_time()
+
+    if df is None or df.empty:
+        return SeriesData(
+            id=keyword, name=keyword, source="google_trends", error="No data returned"
+        )
+
+    points = []
+    for ts, row in df.iterrows():
+        try:
+            date_str = (
+                ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
+            )
+            value = float(row[keyword])
+            points.append(TimeSeriesPoint(date=date_str, value=value))
+        except (ValueError, TypeError, KeyError):
+            continue
+
+    points.sort(key=lambda p: p.date)
+    return SeriesData(id=keyword, name=keyword, source="google_trends", points=points)
+
+
+def fetch_yfinance_series(ticker: str) -> SeriesData:
+    import yfinance as yf
+
+    t = yf.Ticker(ticker)
+    hist = t.history(period="2y")
+
+    if hist is None or hist.empty:
+        return SeriesData(
+            id=ticker, name=ticker, source="yfinance", error="No data returned"
+        )
+
+    points = []
+    for ts, row in hist.iterrows():
+        try:
+            date_str = (
+                ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
+            )
+            value = float(row.get("Close", row.get("Adj Close", 0)))
+            if value > 0:
+                points.append(TimeSeriesPoint(date=date_str, value=value))
+        except (ValueError, TypeError):
+            continue
+
+    points.sort(key=lambda p: p.date)
+    return SeriesData(id=ticker, name=ticker, source="yfinance", points=points)
+
+
 FETCHERS = {
     "fred": fetch_fred_series,
     "world_bank": fetch_world_bank_series,
@@ -161,6 +215,8 @@ FETCHERS = {
     "oecd": fetch_oecd_series,
     "eurostat": fetch_eurostat_series,
     "nbs": fetch_nbs_series,
+    "google_trends": fetch_google_trends_series,
+    "yfinance": fetch_yfinance_series,
 }
 
 

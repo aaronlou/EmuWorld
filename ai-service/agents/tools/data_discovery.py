@@ -192,6 +192,293 @@ _DEFAULT_CATALOGS = {
             ),
         ],
     },
+    "google_trends": {
+        "display_name": "Google Trends",
+        "series": [
+            (
+                "unemployment",
+                "Unemployment (Search Interest)",
+                "employment",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "inflation",
+                "Inflation (Search Interest)",
+                "inflation",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "recession",
+                "Recession (Search Interest)",
+                "growth",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "housing market",
+                "Housing Market (Search Interest)",
+                "real_estate",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "interest rate",
+                "Interest Rate (Search Interest)",
+                "money_supply",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "stock market",
+                "Stock Market (Search Interest)",
+                "growth",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "gas prices",
+                "Gas Prices (Search Interest)",
+                "inflation",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "layoffs",
+                "Layoffs (Search Interest)",
+                "employment",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "mortgage rate",
+                "Mortgage Rate (Search Interest)",
+                "real_estate",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "consumer confidence",
+                "Consumer Confidence (Search Interest)",
+                "growth",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "air purifier",
+                "Air Purifier (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "robot vacuum",
+                "Robot Vacuum (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "ergonomic chair",
+                "Ergonomic Chair (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "standing desk",
+                "Standing Desk (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "air fryer",
+                "Air Fryer (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "pet camera",
+                "Pet Camera (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "portable blender",
+                "Portable Blender (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "led strip lights",
+                "LED Strip Lights (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "wireless earbuds",
+                "Wireless Earbuds (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "phone tripod",
+                "Phone Tripod (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "car phone holder",
+                "Car Phone Holder (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "laptop stand",
+                "Laptop Stand (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "resistance bands",
+                "Resistance Bands (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "smart watch",
+                "Smart Watch (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+            (
+                "yoga mat",
+                "Yoga Mat (Search Interest)",
+                "ecommerce",
+                "Weekly",
+                "Index 0-100",
+            ),
+        ],
+    },
+    "census": {
+        "display_name": "US Census Bureau - Retail Trade",
+        "series": [
+            ("RSMNS", "US Total Retail Sales", "retail", "Monthly", "Millions USD"),
+            (
+                "RSXFS",
+                "US Retail & Food Services Excl Food",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "RSAFS",
+                "US Total Retail & Food Services",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R44X45",
+                "US Retail Excl General Merchandise",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R452",
+                "US General Merchandise Stores",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "RSM44X452P453",
+                "US Nonstore Retailers (E-commerce)",
+                "ecommerce",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R448",
+                "US Clothing & Accessories Stores",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R445",
+                "US Health & Personal Care Stores",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R442",
+                "US Furniture & Home Furnishings",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R443",
+                "US Electronics & Appliances",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R441",
+                "US Motor Vehicle & Parts Dealers",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+            (
+                "R722",
+                "US Food Services & Drinking Places",
+                "retail",
+                "Monthly",
+                "Millions USD",
+            ),
+        ],
+    },
+    "yfinance": {
+        "display_name": "Yahoo Finance — Global Markets",
+        "series": [
+            ("^GSPC", "S&P 500 Index", "equity", "Daily", "Index"),
+            ("^DJI", "Dow Jones Industrial Average", "equity", "Daily", "Index"),
+            ("^IXIC", "NASDAQ Composite", "equity", "Daily", "Index"),
+            ("^N225", "Nikkei 225 (Japan)", "equity", "Daily", "Index"),
+            ("^FTSE", "FTSE 100 (UK)", "equity", "Daily", "Index"),
+            ("^HSI", "Hang Seng Index (Hong Kong)", "equity", "Daily", "Index"),
+            ("000001.SS", "SSE Composite Index (Shanghai)", "equity", "Daily", "Index"),
+            ("^VIX", "CBOE Volatility Index (VIX)", "volatility", "Daily", "Index"),
+            ("EURUSD=X", "EUR/USD Exchange Rate", "forex", "Daily", "Rate"),
+            ("GBPUSD=X", "GBP/USD Exchange Rate", "forex", "Daily", "Rate"),
+            ("USDJPY=X", "USD/JPY Exchange Rate", "forex", "Daily", "Rate"),
+            ("USDCNY=X", "USD/CNY Exchange Rate", "forex", "Daily", "Rate"),
+            ("GC=F", "Gold Futures", "commodity", "Daily", "USD/oz"),
+            ("CL=F", "Crude Oil WTI Futures", "commodity", "Daily", "USD/bbl"),
+            ("SI=F", "Silver Futures", "commodity", "Daily", "USD/oz"),
+            ("^TNX", "US 10-Year Treasury Yield", "bond", "Daily", "Percent"),
+            ("^TYX", "US 30-Year Treasury Yield", "bond", "Daily", "Percent"),
+            ("BTC-USD", "Bitcoin / USD", "crypto", "Daily", "USD"),
+            ("ETH-USD", "Ethereum / USD", "crypto", "Daily", "USD"),
+        ],
+    },
 }
 
 
@@ -293,6 +580,18 @@ def discover_nbs() -> SourceCatalog:
     return _build_catalog_from_defaults("nbs")
 
 
+def discover_google_trends() -> SourceCatalog:
+    return _build_catalog_from_defaults("google_trends")
+
+
+def discover_census() -> SourceCatalog:
+    return _build_catalog_from_defaults("census")
+
+
+def discover_yfinance() -> SourceCatalog:
+    return _build_catalog_from_defaults("yfinance")
+
+
 DISCOVERERS = {
     "fred": discover_fred,
     "world_bank": discover_world_bank,
@@ -300,6 +599,9 @@ DISCOVERERS = {
     "oecd": discover_oecd,
     "eurostat": discover_eurostat,
     "nbs": discover_nbs,
+    "google_trends": discover_google_trends,
+    "census": discover_census,
+    "yfinance": discover_yfinance,
 }
 
 
