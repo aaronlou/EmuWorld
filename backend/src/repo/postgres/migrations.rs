@@ -191,5 +191,86 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .await
     .map_err(|e| RepoError::Database(e.to_string()))?;
 
+    // ── Memory system tables ──
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS memory_entries (
+            id SERIAL PRIMARY KEY,
+            memory_type TEXT NOT NULL,           -- episodic, semantic, procedural, cognitive
+            content    TEXT NOT NULL,
+            summary    TEXT NOT NULL DEFAULT '',
+            tags       TEXT[] NOT NULL DEFAULT '{}',
+            source     TEXT NOT NULL DEFAULT '',  -- user_chat, agent_generated, observation
+            confidence  DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+            embedding  TEXT NOT NULL DEFAULT '',  -- reserved for pgvector later
+            metadata   JSONB NOT NULL DEFAULT '{}',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS memory_links (
+            id SERIAL PRIMARY KEY,
+            source_id INTEGER NOT NULL REFERENCES memory_entries(id) ON DELETE CASCADE,
+            target_id INTEGER NOT NULL REFERENCES memory_entries(id) ON DELETE CASCADE,
+            relation  TEXT NOT NULL,              -- related_to, supports, contradicts, causes
+            metadata  JSONB NOT NULL DEFAULT '{}',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE(source_id, target_id, relation)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS memory_sessions (
+            id SERIAL PRIMARY KEY,
+            session_summary TEXT NOT NULL DEFAULT '',
+            key_topics     TEXT[] NOT NULL DEFAULT '{}',
+            entry_ids      INTEGER[] NOT NULL DEFAULT '{}',
+            started_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            ended_at       TIMESTAMPTZ
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    // full-text search index on content + summary
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_memory_fts ON memory_entries USING GIN(to_tsvector('simple', content || ' ' || summary))",
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_entries(memory_type)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_memory_tags ON memory_entries USING GIN(tags)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_memory_links_source ON memory_links(source_id)",
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
     Ok(())
 }
