@@ -3,9 +3,11 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::{ChatMessageRecord, ChatSession, CreateTargetRequest, DataPoint, Dataset, DataSource, Prediction, PredictionRun, PredictionTarget};
+use crate::models::{ChatMessageRecord, ChatSession, CreateNewsArticleRequest, CreateTargetRequest, DataPoint, Dataset, DataSource, IndicatorAnomaly, NewsArticle, NewsQuery, Prediction, PredictionRun, PredictionTarget};
 
 pub mod postgres;
+
+pub use postgres::PostgresRepo;
 
 #[derive(Debug, Error)]
 pub enum RepoError {
@@ -114,6 +116,7 @@ pub trait PredictionRepo: Send + Sync {
     async fn list_latest_runs(&self) -> Result<Vec<PredictionRun>>;
     async fn get_run(&self, run_id: i64) -> Result<Option<PredictionRun>>;
     async fn create_run(&self, run: &CreatePredictionRun) -> Result<PredictionRun>;
+    async fn mark_run_running(&self, run_id: i64) -> Result<PredictionRun>;
     async fn mark_run_completed(&self, run_id: i64) -> Result<PredictionRun>;
     async fn mark_run_failed(&self, run_id: i64, error_message: &str) -> Result<PredictionRun>;
     async fn create_batch(&self, target_id: i64, predictions: &[CreatePrediction]) -> Result<()>;
@@ -137,7 +140,27 @@ pub trait ChatRepo: Send + Sync {
     async fn touch_chat_session(&self, session_id: i64) -> Result<()>;
 }
 
-pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo + ChatRepo {}
+#[async_trait]
+pub trait NewsRepo: Send + Sync {
+    async fn create_news_article(&self, article: &CreateNewsArticleRequest) -> Result<NewsArticle>;
+    async fn list_news(&self, query: &NewsQuery) -> Result<Vec<NewsArticle>>;
+    async fn get_news_article(&self, id: i64) -> Result<Option<NewsArticle>>;
+    async fn get_news_by_url(&self, url: &str) -> Result<Option<NewsArticle>>;
+    async fn delete_news_article(&self, id: i64) -> Result<()>;
+    async fn batch_upsert_news(&self, articles: &[CreateNewsArticleRequest]) -> Result<usize>;
+    async fn update_news_nlp(&self, id: i64, sentiment_score: f64, entities: serde_json::Value) -> Result<()>;
+}
+
+#[async_trait]
+pub trait AnomalyRepo: Send + Sync {
+    async fn create_anomaly(&self, dataset_id: i64, date: chrono::NaiveDate, value: f64, z_score: f64, anomaly_type: &str) -> Result<IndicatorAnomaly>;
+    async fn list_anomalies(&self, query: &crate::models::AnomalyQuery) -> Result<Vec<IndicatorAnomaly>>;
+    async fn get_latest_anomalies(&self, dataset_id: i64, days: i32) -> Result<Vec<IndicatorAnomaly>>;
+    async fn compute_and_store_anomalies(&self, dataset_id: i64, threshold: f64) -> Result<Vec<IndicatorAnomaly>>;
+    async fn get_anomaly(&self, id: i64) -> Result<Option<IndicatorAnomaly>>;
+}
+
+pub trait AppRepo: DatasetRepo + TargetRepo + PredictionRepo + DataSourceRepo + ChatRepo + NewsRepo + AnomalyRepo {}
 
 pub async fn init_pool(db_url: &str) -> Result<PgPool> {
     sqlx::PgPool::connect(db_url)

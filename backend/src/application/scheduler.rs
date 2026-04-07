@@ -23,6 +23,31 @@ pub fn spawn_auto_sync_scheduler(
     })
 }
 
+pub fn spawn_news_sync_scheduler(
+    sync_service: SourceSyncService,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(6 * 60 * 60));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        loop {
+            interval.tick().await;
+            tracing::info!("[news sync] Starting scheduled sync...");
+            match sync_service.sync_news().await {
+                Ok(result) => {
+                    tracing::info!(
+                        "[news sync] Complete: {} new articles synced",
+                        result.data_points_synced,
+                    );
+                }
+                Err(e) => {
+                    tracing::error!("[news sync] Failed: {}", e);
+                }
+            }
+        }
+    })
+}
+
 async fn run_all_auto_syncs(
     sync_service: &SourceSyncService,
     repo: &dyn AppRepo,

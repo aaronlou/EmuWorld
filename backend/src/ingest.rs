@@ -4,8 +4,13 @@ pub mod imf;
 pub mod nbs;
 pub mod oecd;
 pub mod eurostat;
+pub mod news;
+pub mod google_trends;
+pub mod yfinance;
 
 use async_trait::async_trait;
+use std::sync::Arc;
+use crate::integrations::ai_client::AIClient;
 
 #[derive(Debug, Clone)]
 pub struct Observation {
@@ -29,6 +34,7 @@ pub fn build_adapter(
     source_name: &str,
     api_base_url: String,
     api_key: String,
+    ai_client: Arc<AIClient>,
 ) -> Result<Box<dyn DataSource>, String> {
     match source_name {
         "fred" => Ok(Box::new(fred::FredSource::new(
@@ -79,6 +85,15 @@ pub fn build_adapter(
             },
             api_key,
         ))),
+        "google_trends" => Ok(Box::new(google_trends::GoogleTrendsSource::new(
+            ai_client,
+            api_key,
+        ))),
+        "yfinance" => Ok(Box::new(yfinance::YFinanceSource::new(
+            ai_client,
+            api_key,
+        ))),
+        "news" => Ok(Box::new(news::NewsSource::new())),
         other => Err(format!("Unknown data source: {}", other)),
     }
 }

@@ -1,23 +1,116 @@
-    Finished `release` profile [optimized] target(s) in 0.12s
+warning: unused import: `ApiError`
+ --> src/api/news.rs:9:19
+  |
+9 |     api::errors::{ApiError, ApiResult},
+  |                   ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `models::PredictionResponse`
+ --> src/application/prediction_service.rs:5:5
+  |
+5 |     models::PredictionResponse,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `postgres::PostgresRepo`
+  --> src/repo.rs:10:9
+   |
+10 | pub use postgres::PostgresRepo;
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `enrich_context` is never used
+  --> src/application/chat_service.rs:37:14
+   |
+32 | impl ChatService {
+   | ---------------- method in this implementation
+...
+37 |     async fn enrich_context(&self, mut context: ChatContext) -> Result<ChatContext> {
+   |              ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `AUTO_SYNC_SOURCES` is never used
+ --> src/application/scheduler.rs:7:7
+  |
+7 | const AUTO_SYNC_SOURCES: &[&str] = &["google_trends", "yfinance"];
+  |       ^^^^^^^^^^^^^^^^^
+
+warning: function `spawn_auto_sync_scheduler` is never used
+ --> src/application/scheduler.rs:9:8
+  |
+9 | pub fn spawn_auto_sync_scheduler(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `run_all_auto_syncs` is never used
+  --> src/application/scheduler.rs:51:10
+   |
+51 | async fn run_all_auto_syncs(
+   |          ^^^^^^^^^^^^^^^^^^
+
+warning: field `ai_client` is never read
+  --> src/bootstrap/app_state.rs:18:9
+   |
+13 | pub struct AppState {
+   |            -------- field in this struct
+...
+18 |     pub ai_client: Arc<AIClient>,
+   |         ^^^^^^^^^
+   |
+   = note: `AppState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: struct `PredictionResponse` is never constructed
+  --> src/models.rs:95:12
+   |
+95 | pub struct PredictionResponse {
+   |            ^^^^^^^^^^^^^^^^^^
+
+warning: methods `delete_news_article` and `update_news_nlp` are never used
+   --> src/repo.rs:149:14
+    |
+144 | pub trait NewsRepo: Send + Sync {
+    |           -------- methods in this trait
+...
+149 |     async fn delete_news_article(&self, id: i64) -> Result<()>;
+    |              ^^^^^^^^^^^^^^^^^^^
+150 |     async fn batch_upsert_news(&self, articles: &[CreateNewsArticleRequest]) -> Result<usize>;
+151 |     async fn update_news_nlp(&self, id: i64, sentiment_score: f64, entities: serde_json::Value) -> Result<()>;
+    |              ^^^^^^^^^^^^^^^
+
+warning: `emu-world-backend` (bin "emu-world-backend") generated 10 warnings (run `cargo fix --bin "emu-world-backend" -p emu-world-backend` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 0.33s
      Running `target/release/emu-world-backend`
-[2m2026-04-04T03:12:21.414608Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m Connecting to PostgreSQL: postgresql://emuworld:emuworld_pass@localhost:5432/emuworld
-[2m2026-04-04T03:12:21.425368Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "data_sources" already exists, skipping
-[2m2026-04-04T03:12:21.432760Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "datasets" already exists, skipping
-[2m2026-04-04T03:12:21.433332Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "data_points" already exists, skipping
-[2m2026-04-04T03:12:21.433823Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "prediction_targets" already exists, skipping
-[2m2026-04-04T03:12:21.434257Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "prediction_runs" already exists, skipping
-[2m2026-04-04T03:12:21.434661Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "predictions" already exists, skipping
-[2m2026-04-04T03:12:21.435060Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "chat_sessions" already exists, skipping
-[2m2026-04-04T03:12:21.435490Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "chat_messages" already exists, skipping
-[2m2026-04-04T03:12:21.436273Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "run_id" of relation "predictions" already exists, skipping
-[2m2026-04-04T03:12:21.437462Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_data_points_dataset_id" already exists, skipping
-[2m2026-04-04T03:12:21.437986Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_datasets_source_external" already exists, skipping
-[2m2026-04-04T03:12:21.438346Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_prediction_runs_target_id" already exists, skipping
-[2m2026-04-04T03:12:21.438670Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_predictions_target_id" already exists, skipping
-[2m2026-04-04T03:12:21.438985Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_predictions_run_id" already exists, skipping
-[2m2026-04-04T03:12:21.439397Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_chat_messages_session_id" already exists, skipping
-[2m2026-04-04T03:12:21.440879Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080
-[2m2026-04-04T03:12:56.532647Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m84
-[2m2026-04-04T03:14:56.870793Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m27
-[2m2026-04-04T03:20:06.667457Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m36
-[2m2026-04-04T03:39:12.813455Z[0m [32m INFO[0m [2memu_world_backend::application::chat_service[0m[2m:[0m forwarding chat request to ai-service [3msession_id[0m[2m=[0m1 [3mpage[0m[2m=[0m"datasets" [3mmessage_len[0m[2m=[0m42
+[2m2026-04-07T00:37:56.649948Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m Connecting to PostgreSQL: postgresql://emuworld:emuworld_pass@localhost:5432/emuworld
+[2m2026-04-07T00:37:56.658418Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "data_sources" already exists, skipping
+[2m2026-04-07T00:37:56.663492Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "datasets" already exists, skipping
+[2m2026-04-07T00:37:56.663763Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "data_points" already exists, skipping
+[2m2026-04-07T00:37:56.665219Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "prediction_targets" already exists, skipping
+[2m2026-04-07T00:37:56.665507Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "prediction_runs" already exists, skipping
+[2m2026-04-07T00:37:56.665752Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "predictions" already exists, skipping
+[2m2026-04-07T00:37:56.666044Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "chat_sessions" already exists, skipping
+[2m2026-04-07T00:37:56.666439Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "chat_messages" already exists, skipping
+[2m2026-04-07T00:37:56.667169Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "run_id" of relation "predictions" already exists, skipping
+[2m2026-04-07T00:37:56.668068Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_data_points_dataset_id" already exists, skipping
+[2m2026-04-07T00:37:56.668741Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_datasets_source_external" already exists, skipping
+[2m2026-04-07T00:37:56.669181Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_prediction_runs_target_id" already exists, skipping
+[2m2026-04-07T00:37:56.669590Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_predictions_target_id" already exists, skipping
+[2m2026-04-07T00:37:56.669987Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_predictions_run_id" already exists, skipping
+[2m2026-04-07T00:37:56.670485Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_chat_messages_session_id" already exists, skipping
+[2m2026-04-07T00:37:56.670927Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "memory_entries" already exists, skipping
+[2m2026-04-07T00:37:56.671328Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "memory_links" already exists, skipping
+[2m2026-04-07T00:37:56.671661Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "memory_sessions" already exists, skipping
+[2m2026-04-07T00:37:56.672297Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_memory_fts" already exists, skipping
+[2m2026-04-07T00:37:56.672801Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_memory_type" already exists, skipping
+[2m2026-04-07T00:37:56.673217Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_memory_tags" already exists, skipping
+[2m2026-04-07T00:37:56.673624Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_memory_links_source" already exists, skipping
+[2m2026-04-07T00:37:56.674022Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "news_articles" already exists, skipping
+[2m2026-04-07T00:37:56.674603Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_news_source_name" already exists, skipping
+[2m2026-04-07T00:37:56.675129Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_news_published_at" already exists, skipping
+[2m2026-04-07T00:37:56.675486Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_news_category" already exists, skipping
+[2m2026-04-07T00:37:56.675892Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_news_sentiment" already exists, skipping
+[2m2026-04-07T00:37:56.676307Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "indicator_anomalies" already exists, skipping
+[2m2026-04-07T00:37:56.676846Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_anomalies_dataset" already exists, skipping
+[2m2026-04-07T00:37:56.677219Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "idx_anomalies_z_score" already exists, skipping
+[2m2026-04-07T00:37:56.679247Z[0m [32m INFO[0m [2memu_world_backend::application::scheduler[0m[2m:[0m [news sync] Starting scheduled sync...
+[2m2026-04-07T00:37:56.679941Z[0m [32m INFO[0m [2memu_world_backend[0m[2m:[0m listening on 0.0.0.0:8080
+[2m2026-04-07T00:37:58.999969Z[0m [33m WARN[0m [2memu_world_backend::ingest::news[0m[2m:[0m Failed to fetch Reuters: the input did not begin with an rss tag
+[2m2026-04-07T00:38:10.047178Z[0m [32m INFO[0m [2memu_world_backend::application::scheduler[0m[2m:[0m [news sync] Complete: 0 new articles synced

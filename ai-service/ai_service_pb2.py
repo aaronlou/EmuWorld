@@ -24,17 +24,35 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\"J\n\x0ePredictRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\x14\n\x0chorizon_days\x18\x02 \x01(\x05\x12\x10\n\x08outcomes\x18\x03 \x03(\t\"(\n\x0fPredictResponse\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\x32W\n\x11PredictionService\x12\x42\n\x07Predict\x12\x1a.ai_service.PredictRequest\x1a\x1b.ai_service.PredictResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\"5\n\x10\x46\x65tchDataRequest\x12\x0e\n\x06source\x18\x01 \x01(\t\x12\x11\n\tseries_id\x18\x02 \x01(\t\"j\n\x11\x46\x65tchDataResponse\x12\x0e\n\x06source\x18\x01 \x01(\t\x12\x11\n\tseries_id\x18\x02 \x01(\t\x12#\n\x04\x64\x61ta\x18\x03 \x03(\x0b\x32\x15.ai_service.DataPoint\x12\r\n\x05\x65rror\x18\x04 \x01(\t\"(\n\tDataPoint\x12\x0c\n\x04\x64\x61te\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01\"[\n\x0ePredictRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\x14\n\x0chorizon_days\x18\x02 \x01(\x05\x12\x10\n\x08outcomes\x18\x03 \x03(\t\x12\x0f\n\x07\x63ontext\x18\x04 \x01(\t\"W\n\x0fPredictResponse\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\x12\x13\n\x0b\x65xplanation\x18\x02 \x01(\t\x12\x18\n\x10\x63onfidence_score\x18\x03 \x01(\x01\"r\n\x0b\x43hatRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12(\n\x07history\x18\x02 \x03(\x0b\x32\x17.ai_service.ChatHistory\x12(\n\x07\x63ontext\x18\x03 \x01(\x0b\x32\x17.ai_service.ChatContext\"\xe7\x01\n\x0b\x43hatContext\x12\x0c\n\x04page\x18\x01 \x01(\t\x12\x16\n\x0e\x64\x61tasets_count\x18\x02 \x01(\r\x12\x15\n\rtargets_count\x18\x03 \x01(\r\x12\x19\n\x11predictions_count\x18\x04 \x01(\r\x12\x17\n\x0f\x64\x61taset_catalog\x18\x05 \x03(\t\x12\x16\n\x0etarget_catalog\x18\x06 \x03(\t\x12\x1a\n\x12prediction_catalog\x18\x07 \x03(\t\x12\x0f\n\x07\x64\x61taset\x18\x08 \x01(\t\x12\x0e\n\x06target\x18\t \x01(\t\x12\x12\n\nprediction\x18\n \x01(\t\",\n\x0b\x43hatHistory\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"-\n\x0c\x43hatResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\x0c\n\x04role\x18\x02 \x01(\t\"5\n\x0e\x41nalyzeRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\x14\n\x0c\x64\x61ta_context\x18\x02 \x01(\t\"I\n\x0f\x41nalyzeResponse\x12\x10\n\x08\x61nalysis\x18\x01 \x01(\t\x12\x10\n\x08insights\x18\x02 \x03(\t\x12\x12\n\nreferences\x18\x03 \x03(\t2\xdb\x02\n\tAIService\x12\x42\n\x07Predict\x12\x1a.ai_service.PredictRequest\x1a\x1b.ai_service.PredictResponse\x12\x39\n\x04\x43hat\x12\x17.ai_service.ChatRequest\x1a\x18.ai_service.ChatResponse\x12\x41\n\nChatStream\x12\x17.ai_service.ChatRequest\x1a\x18.ai_service.ChatResponse0\x01\x12\x42\n\x07\x41nalyze\x12\x1a.ai_service.AnalyzeRequest\x1a\x1b.ai_service.AnalyzeResponse\x12H\n\tFetchData\x12\x1c.ai_service.FetchDataRequest\x1a\x1d.ai_service.FetchDataResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PREDICTREQUEST']._serialized_start=32
-  _globals['_PREDICTREQUEST']._serialized_end=106
-  _globals['_PREDICTRESPONSE']._serialized_start=108
-  _globals['_PREDICTRESPONSE']._serialized_end=148
-  _globals['_PREDICTIONSERVICE']._serialized_start=150
-  _globals['_PREDICTIONSERVICE']._serialized_end=237
+  _globals['_FETCHDATAREQUEST']._serialized_start=32
+  _globals['_FETCHDATAREQUEST']._serialized_end=85
+  _globals['_FETCHDATARESPONSE']._serialized_start=87
+  _globals['_FETCHDATARESPONSE']._serialized_end=193
+  _globals['_DATAPOINT']._serialized_start=195
+  _globals['_DATAPOINT']._serialized_end=235
+  _globals['_PREDICTREQUEST']._serialized_start=237
+  _globals['_PREDICTREQUEST']._serialized_end=328
+  _globals['_PREDICTRESPONSE']._serialized_start=330
+  _globals['_PREDICTRESPONSE']._serialized_end=417
+  _globals['_CHATREQUEST']._serialized_start=419
+  _globals['_CHATREQUEST']._serialized_end=533
+  _globals['_CHATCONTEXT']._serialized_start=536
+  _globals['_CHATCONTEXT']._serialized_end=767
+  _globals['_CHATHISTORY']._serialized_start=769
+  _globals['_CHATHISTORY']._serialized_end=813
+  _globals['_CHATRESPONSE']._serialized_start=815
+  _globals['_CHATRESPONSE']._serialized_end=860
+  _globals['_ANALYZEREQUEST']._serialized_start=862
+  _globals['_ANALYZEREQUEST']._serialized_end=915
+  _globals['_ANALYZERESPONSE']._serialized_start=917
+  _globals['_ANALYZERESPONSE']._serialized_end=990
+  _globals['_AISERVICE']._serialized_start=993
+  _globals['_AISERVICE']._serialized_end=1340
 # @@protoc_insertion_point(module_scope)

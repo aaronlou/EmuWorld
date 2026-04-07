@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { MessageSquare, SendHorizontal, Sparkles, X } from 'lucide-react'
 
 import { useI18n } from '../i18n'
@@ -12,6 +12,7 @@ interface ChatWidgetProps {
 export function ChatWidget({ context }: ChatWidgetProps) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const {
     isOpen,
     loading,
@@ -27,11 +28,23 @@ export function ChatWidget({ context }: ChatWidgetProps) {
   } = useChatAssistant(context)
   const showSuggestions = messages.length <= 2
 
+  // Auto-scroll to bottom whenever messages change or streaming updates
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages.length, streamingMessageId])
+
   async function handleSubmit() {
     const next = draft.trim()
     if (!next) return
     setDraft('')
     await sendMessage(next)
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      void handleSubmit()
+    }
   }
 
   return (
@@ -73,16 +86,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
                 </p>
               </div>
             ))}
-            {loading && (
-              <div className="chat-message assistant">
-                <span className="chat-role">AI</span>
-                <p className="chat-thinking">
-                  <span />
-                  <span />
-                  <span />
-                </p>
-              </div>
-            )}
+            <div ref={messagesEndRef} />
           </div>
 
           {showSuggestions && (
@@ -108,6 +112,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
               rows={2}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={t('chat.placeholder')}
             />
             <button onClick={() => void handleSubmit()} disabled={loading || draft.trim().length === 0}>

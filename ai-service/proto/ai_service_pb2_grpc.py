@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import ai_service_pb2 as ai__service__pb2
+from proto import ai_service_pb2 as proto_dot_ai__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in ai_service_pb2_grpc.py depends on'
+        + ' but the generated code in proto/ai_service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,28 +36,28 @@ class AIServiceStub(object):
         """
         self.Predict = channel.unary_unary(
                 '/ai_service.AIService/Predict',
-                request_serializer=ai__service__pb2.PredictRequest.SerializeToString,
-                response_deserializer=ai__service__pb2.PredictResponse.FromString,
+                request_serializer=proto_dot_ai__service__pb2.PredictRequest.SerializeToString,
+                response_deserializer=proto_dot_ai__service__pb2.PredictResponse.FromString,
                 _registered_method=True)
         self.Chat = channel.unary_unary(
                 '/ai_service.AIService/Chat',
-                request_serializer=ai__service__pb2.ChatRequest.SerializeToString,
-                response_deserializer=ai__service__pb2.ChatResponse.FromString,
+                request_serializer=proto_dot_ai__service__pb2.ChatRequest.SerializeToString,
+                response_deserializer=proto_dot_ai__service__pb2.ChatResponse.FromString,
                 _registered_method=True)
         self.ChatStream = channel.unary_stream(
                 '/ai_service.AIService/ChatStream',
-                request_serializer=ai__service__pb2.ChatRequest.SerializeToString,
-                response_deserializer=ai__service__pb2.ChatResponse.FromString,
+                request_serializer=proto_dot_ai__service__pb2.ChatRequest.SerializeToString,
+                response_deserializer=proto_dot_ai__service__pb2.ChatResponse.FromString,
                 _registered_method=True)
         self.Analyze = channel.unary_unary(
                 '/ai_service.AIService/Analyze',
-                request_serializer=ai__service__pb2.AnalyzeRequest.SerializeToString,
-                response_deserializer=ai__service__pb2.AnalyzeResponse.FromString,
+                request_serializer=proto_dot_ai__service__pb2.AnalyzeRequest.SerializeToString,
+                response_deserializer=proto_dot_ai__service__pb2.AnalyzeResponse.FromString,
                 _registered_method=True)
         self.FetchData = channel.unary_unary(
                 '/ai_service.AIService/FetchData',
-                request_serializer=ai__service__pb2.FetchDataRequest.SerializeToString,
-                response_deserializer=ai__service__pb2.FetchDataResponse.FromString,
+                request_serializer=proto_dot_ai__service__pb2.FetchDataRequest.SerializeToString,
+                response_deserializer=proto_dot_ai__service__pb2.FetchDataResponse.FromString,
                 _registered_method=True)
 
 
@@ -103,28 +103,28 @@ def add_AIServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Predict': grpc.unary_unary_rpc_method_handler(
                     servicer.Predict,
-                    request_deserializer=ai__service__pb2.PredictRequest.FromString,
-                    response_serializer=ai__service__pb2.PredictResponse.SerializeToString,
+                    request_deserializer=proto_dot_ai__service__pb2.PredictRequest.FromString,
+                    response_serializer=proto_dot_ai__service__pb2.PredictResponse.SerializeToString,
             ),
             'Chat': grpc.unary_unary_rpc_method_handler(
                     servicer.Chat,
-                    request_deserializer=ai__service__pb2.ChatRequest.FromString,
-                    response_serializer=ai__service__pb2.ChatResponse.SerializeToString,
+                    request_deserializer=proto_dot_ai__service__pb2.ChatRequest.FromString,
+                    response_serializer=proto_dot_ai__service__pb2.ChatResponse.SerializeToString,
             ),
             'ChatStream': grpc.unary_stream_rpc_method_handler(
                     servicer.ChatStream,
-                    request_deserializer=ai__service__pb2.ChatRequest.FromString,
-                    response_serializer=ai__service__pb2.ChatResponse.SerializeToString,
+                    request_deserializer=proto_dot_ai__service__pb2.ChatRequest.FromString,
+                    response_serializer=proto_dot_ai__service__pb2.ChatResponse.SerializeToString,
             ),
             'Analyze': grpc.unary_unary_rpc_method_handler(
                     servicer.Analyze,
-                    request_deserializer=ai__service__pb2.AnalyzeRequest.FromString,
-                    response_serializer=ai__service__pb2.AnalyzeResponse.SerializeToString,
+                    request_deserializer=proto_dot_ai__service__pb2.AnalyzeRequest.FromString,
+                    response_serializer=proto_dot_ai__service__pb2.AnalyzeResponse.SerializeToString,
             ),
             'FetchData': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchData,
-                    request_deserializer=ai__service__pb2.FetchDataRequest.FromString,
-                    response_serializer=ai__service__pb2.FetchDataResponse.SerializeToString,
+                    request_deserializer=proto_dot_ai__service__pb2.FetchDataRequest.FromString,
+                    response_serializer=proto_dot_ai__service__pb2.FetchDataResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -152,8 +152,8 @@ class AIService(object):
             request,
             target,
             '/ai_service.AIService/Predict',
-            ai__service__pb2.PredictRequest.SerializeToString,
-            ai__service__pb2.PredictResponse.FromString,
+            proto_dot_ai__service__pb2.PredictRequest.SerializeToString,
+            proto_dot_ai__service__pb2.PredictResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -179,8 +179,8 @@ class AIService(object):
             request,
             target,
             '/ai_service.AIService/Chat',
-            ai__service__pb2.ChatRequest.SerializeToString,
-            ai__service__pb2.ChatResponse.FromString,
+            proto_dot_ai__service__pb2.ChatRequest.SerializeToString,
+            proto_dot_ai__service__pb2.ChatResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -206,8 +206,8 @@ class AIService(object):
             request,
             target,
             '/ai_service.AIService/ChatStream',
-            ai__service__pb2.ChatRequest.SerializeToString,
-            ai__service__pb2.ChatResponse.FromString,
+            proto_dot_ai__service__pb2.ChatRequest.SerializeToString,
+            proto_dot_ai__service__pb2.ChatResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -233,8 +233,8 @@ class AIService(object):
             request,
             target,
             '/ai_service.AIService/Analyze',
-            ai__service__pb2.AnalyzeRequest.SerializeToString,
-            ai__service__pb2.AnalyzeResponse.FromString,
+            proto_dot_ai__service__pb2.AnalyzeRequest.SerializeToString,
+            proto_dot_ai__service__pb2.AnalyzeResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -260,8 +260,8 @@ class AIService(object):
             request,
             target,
             '/ai_service.AIService/FetchData',
-            ai__service__pb2.FetchDataRequest.SerializeToString,
-            ai__service__pb2.FetchDataResponse.FromString,
+            proto_dot_ai__service__pb2.FetchDataRequest.SerializeToString,
+            proto_dot_ai__service__pb2.FetchDataResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -86,6 +86,12 @@ pub struct CreateTargetRequest {
 }
 
 #[derive(Debug, Serialize)]
+pub struct PredictionTaskResponse {
+    pub run_id: i64,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct PredictionResponse {
     pub target: PredictionTarget,
     pub run: PredictionRun,
@@ -193,4 +199,103 @@ pub struct ChatMessageRecord {
 pub struct CreateChatSessionRequest {
     #[serde(default)]
     pub title: Option<String>,
+}
+
+// ==================== News Models ====================
+
+#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
+pub struct NewsArticle {
+    pub id: i64,
+    pub source_name: String,
+    pub title: String,
+    pub url: String,
+    pub description: Option<String>,
+    pub content: Option<String>,
+    pub author: Option<String>,
+    pub published_at: chrono::NaiveDateTime,
+    pub category: Option<String>,
+    pub language: String,
+    pub country: String,
+    pub fetched_at: chrono::DateTime<Utc>,
+    pub sentiment_score: Option<f64>,
+    pub entities: Option<serde_json::Value>,
+    pub processed_at: Option<chrono::DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateNewsArticleRequest {
+    pub source_name: String,
+    pub title: String,
+    pub url: String,
+    pub description: Option<String>,
+    pub content: Option<String>,
+    pub author: Option<String>,
+    pub published_at: chrono::NaiveDateTime,
+    pub category: Option<String>,
+    pub language: Option<String>,
+    pub country: Option<String>,
+    pub sentiment_score: Option<f64>,
+    pub entities: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NewsQuery {
+    #[serde(default)]
+    pub source: Option<String>,
+    #[serde(default)]
+    pub category: Option<String>,
+    #[serde(default)]
+    pub from_date: Option<String>,
+    #[serde(default)]
+    pub to_date: Option<String>,
+    #[serde(default = "default_limit")]
+    pub limit: i32,
+    #[serde(default)]
+    pub offset: i32,
+    #[serde(default)]
+    pub min_sentiment: Option<f64>,
+    #[serde(default)]
+    pub max_sentiment: Option<f64>,
+}
+
+fn default_limit() -> i32 {
+    50
+}
+
+// ==================== Anomaly Models ====================
+
+#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
+pub struct IndicatorAnomaly {
+    pub id: i64,
+    pub dataset_id: i64,
+    pub date: chrono::NaiveDate,
+    pub value: f64,
+    pub z_score: f64,
+    pub threshold: f64,
+    pub anomaly_type: String,
+    pub created_at: chrono::DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnomalyQuery {
+    #[serde(default)]
+    pub dataset_id: Option<i64>,
+    #[serde(default)]
+    pub min_z_score: Option<f64>,
+    #[serde(default)]
+    pub from_date: Option<String>,
+    #[serde(default)]
+    pub to_date: Option<String>,
+    #[serde(default = "default_limit")]
+    pub limit: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnomalySummary {
+    pub dataset_id: i64,
+    pub dataset_name: String,
+    pub latest_value: f64,
+    pub latest_z_score: f64,
+    pub anomaly_count_30d: i32,
+    pub trend: String,
 }

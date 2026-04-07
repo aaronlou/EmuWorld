@@ -1,16 +1,88 @@
 syntax = "proto3";
+
 package ai_service;
 
-service PredictionService {
+service AIService {
+  // 核心预测功能
   rpc Predict (PredictRequest) returns (PredictResponse);
+  
+  // 聊天与交互
+  rpc Chat (ChatRequest) returns (ChatResponse);
+  rpc ChatStream (ChatRequest) returns (stream ChatResponse);
+  
+  // 深度分析与趋势检测
+  rpc Analyze (AnalyzeRequest) returns (AnalyzeResponse);
+
+  // 获取特定数据源（仅限需要 Python 库的，如 Google Trends, yfinance）
+  rpc FetchData (FetchDataRequest) returns (FetchDataResponse);
+}
+
+message FetchDataRequest {
+  string source = 1;
+  string series_id = 2;
+}
+
+message FetchDataResponse {
+  string source = 1;
+  string series_id = 2;
+  repeated DataPoint data = 3;
+  string error = 4;
+}
+
+message DataPoint {
+  string date = 1;
+  double value = 2;
 }
 
 message PredictRequest {
   string question = 1;
   int32 horizon_days = 2;
   repeated string outcomes = 3;
+  string context = 4;
 }
 
 message PredictResponse {
   repeated double probabilities = 1;
+  string explanation = 2;
+  double confidence_score = 3;
+}
+
+message ChatRequest {
+  string message = 1;
+  repeated ChatHistory history = 2;
+  ChatContext context = 3;
+}
+
+message ChatContext {
+  string page = 1;
+  uint32 datasets_count = 2;
+  uint32 targets_count = 3;
+  uint32 predictions_count = 4;
+  repeated string dataset_catalog = 5;
+  repeated string target_catalog = 6;
+  repeated string prediction_catalog = 7;
+  string dataset = 8;
+  string target = 9;
+  string prediction = 10;
+}
+
+message ChatHistory {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatResponse {
+  string content = 1;
+  string role = 2;
+}
+
+message AnalyzeRequest {
+  string query = 1;
+  string data_context = 2;
+}
+
+message AnalyzeResponse {
+  string analysis = 1;
+  repeated string insights = 2;
+  repeated string references = 3;
 }

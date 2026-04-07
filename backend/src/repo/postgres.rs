@@ -11,6 +11,8 @@ impl PostgresRepo {
 }
 mod chat;
 mod datasets;
+mod news;
+mod anomalies;
 pub mod migrations;
 mod predictions;
 mod sources;

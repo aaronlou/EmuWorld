@@ -4,6 +4,9 @@ use serde::Serialize;
 
 use crate::{
     ingest,
+    ingest::news::NewsSource,
+    integrations::ai_client::AIClient,
+    models::CreateNewsArticleRequest,
     repo::{AppRepo, CreateDataPoint, RepoError, Result},
 };
 
@@ -17,11 +20,12 @@ pub struct SourceSyncResult {
 #[derive(Clone)]
 pub struct SourceSyncService {
     repo: Arc<dyn AppRepo>,
+    ai_client: Arc<AIClient>,
 }
 
 impl SourceSyncService {
-    pub fn new(repo: Arc<dyn AppRepo>) -> Self {
-        Self { repo }
+    pub fn new(repo: Arc<dyn AppRepo>, ai_client: Arc<AIClient>) -> Self {
+        Self { repo, ai_client }
     }
 
     pub async fn sync_source(&self, id: i64) -> Result<SourceSyncResult> {
@@ -39,6 +43,7 @@ impl SourceSyncService {
             &source.name,
             source.api_base_url.clone(),
             source.api_key.clone(),
+            self.ai_client.clone(),
         )
         .map_err(RepoError::Validation)?;
 
@@ -90,6 +95,39 @@ impl SourceSyncService {
             source: source.display_name,
             datasets_added,
             data_points_synced,
+        })
+    }
+
+    pub async fn sync_news(&self) -> Result<SourceSyncResult> {
+        let news_source = NewsSource::new();
+        
+        let items = news_source.fetch_all_feeds().await
+            .map_err(|e| RepoError::ExternalService(e.to_string()))?;
+
+        let articles: Vec<CreateNewsArticleRequest> = items
+            .into_iter()
+            .map(|item| CreateNewsArticleRequest {
+                source_name: item.source_name,
+                title: item.title,
+                url: item.url,
+                description: item.description,
+                content: item.content,
+                author: item.author,
+                published_at: item.published_at,
+                category: item.category,
+                language: Some("en".to_string()),
+                country: Some("us".to_string()),
+                entities: None,
+                sentiment_score: None,
+            })
+            .collect();
+
+        let count = self.repo.batch_upsert_news(&articles).await?;
+
+        Ok(SourceSyncResult {
+            source: "News RSS Feeds".to_string(),
+            datasets_added: 0,
+            data_points_synced: count,
         })
     }
 }

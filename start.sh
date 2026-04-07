@@ -125,16 +125,18 @@ sleep 1
 echo -e "\n${YELLOW}[2/4] 启动 Python AI Service (端口 9000)...${NC}"
 cd "$PROJECT_DIR/ai-service"
 source .venv/bin/activate
+. .env.local
 start_detached "$LOG_DIR/ai-service.log" uvicorn main:app --host 0.0.0.0 --port 9000
 echo "  PID: $!"
-sleep 2
+echo "  等待 AI 服务初始化 (gRPC)..."
+sleep 5
 
 # 启动 PostgreSQL (Docker)
 echo -e "\n${YELLOW}[3/4] 启动 PostgreSQL + Rust Backend...${NC}"
 ensure_postgres || exit 1
 
 export DATABASE_URL="postgresql://emuworld:emuworld_pass@localhost:5432/emuworld"
-export AI_SERVICE_URL="http://localhost:9000"
+export AI_SERVICE_URL="http://localhost:9001"
 
 cd "$PROJECT_DIR/backend"
 start_detached "$LOG_DIR/backend.log" cargo run --release

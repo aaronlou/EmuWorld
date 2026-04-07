@@ -1,7 +1,7 @@
 use axum::{extract::State, routing::{get, post}, Json, Router};
 use std::sync::Arc;
 
-use crate::{api::errors::ApiResult, bootstrap::app_state::AppState, models::{PredictionResponse, PredictionRunDetail}};
+use crate::{api::errors::ApiResult, bootstrap::app_state::AppState, models::{PredictionRunDetail, PredictionTaskResponse}};
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
@@ -15,8 +15,12 @@ pub fn router() -> Router<Arc<AppState>> {
 async fn generate_prediction(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(id): axum::extract::Path<i64>,
-) -> ApiResult<PredictionResponse> {
-    Ok(Json(state.prediction_service.generate_prediction(id).await?))
+) -> ApiResult<PredictionTaskResponse> {
+    let run_id = state.prediction_service.generate_prediction(id).await?;
+    Ok(Json(PredictionTaskResponse {
+        run_id,
+        status: "pending".into(),
+    }))
 }
 
 pub async fn get_predictions(

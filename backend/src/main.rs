@@ -8,6 +8,7 @@ mod bootstrap;
 mod models;
 mod repo;
 mod ingest;
+mod integrations;
 
 #[tokio::main]
 async fn main() {
@@ -23,9 +24,14 @@ async fn main() {
         .expect("Failed to run migrations");
 
     let repo: Arc<dyn repo::AppRepo> = Arc::new(repo::postgres::PostgresRepo::new(pool));
+    
+    // Default gRPC port is 9001
     let ai_service_url =
-        std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://localhost:9000".to_string());
-    let state = Arc::new(bootstrap::app_state::AppState::new(repo, ai_service_url));
+        std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://localhost:9001".to_string());
+    
+    let state = Arc::new(bootstrap::app_state::AppState::new(repo.clone(), ai_service_url).await.expect("Failed to initialize AppState"));
+
+    let _news_scheduler = application::scheduler::spawn_news_sync_scheduler(state.source_sync_service.clone());
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
@@ -34,6 +40,8 @@ async fn main() {
         .merge(api::predictions::router())
         .merge(api::targets::router())
         .merge(api::sources::router())
+        .merge(api::news::router())
+        .merge(api::anomalies::router())
         .layer(CorsLayer::permissive())
         .with_state(state);
 

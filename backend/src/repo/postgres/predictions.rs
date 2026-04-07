@@ -99,6 +99,20 @@ impl PredictionRepo for PostgresRepo {
             .ok_or_else(|| RepoError::NotFound(format!("prediction run {}", id)))
     }
 
+    async fn mark_run_running(&self, run_id: i64) -> Result<PredictionRun> {
+        sqlx::query(
+            "UPDATE prediction_runs SET status = 'running', started_at = NOW() WHERE id = $1",
+        )
+        .bind(run_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+        self.get_run(run_id)
+            .await?
+            .ok_or_else(|| RepoError::NotFound(format!("prediction run {}", run_id)))
+    }
+
     async fn mark_run_completed(&self, run_id: i64) -> Result<PredictionRun> {
         sqlx::query(
             "UPDATE prediction_runs SET status = 'completed', finished_at = NOW(), error_message = NULL WHERE id = $1",

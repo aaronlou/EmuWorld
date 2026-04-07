@@ -272,5 +272,79 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .await
     .map_err(|e| RepoError::Database(e.to_string()))?;
 
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS news_articles (
+            id SERIAL PRIMARY KEY,
+            source_name TEXT NOT NULL,
+            title TEXT NOT NULL,
+            url TEXT NOT NULL UNIQUE,
+            description TEXT,
+            content TEXT,
+            author TEXT,
+            published_at TIMESTAMP NOT NULL,
+            category TEXT,
+            language TEXT NOT NULL DEFAULT 'en',
+            country TEXT NOT NULL DEFAULT 'us',
+            fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            sentiment_score DOUBLE PRECISION,
+            entities JSONB,
+            processed_at TIMESTAMPTZ
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_news_source_name ON news_articles(source_name)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_news_published_at ON news_articles(published_at)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_news_category ON news_articles(category)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_news_sentiment ON news_articles(sentiment_score)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS indicator_anomalies (
+            id SERIAL PRIMARY KEY,
+            dataset_id INTEGER NOT NULL REFERENCES datasets(id),
+            date DATE NOT NULL,
+            value DOUBLE PRECISION NOT NULL,
+            z_score DOUBLE PRECISION NOT NULL,
+            threshold DOUBLE PRECISION NOT NULL DEFAULT 2.0,
+            anomaly_type TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE(dataset_id, date)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_anomalies_dataset ON indicator_anomalies(dataset_id)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_anomalies_z_score ON indicator_anomalies(z_score)")
+        .execute(pool)
+        .await
+        .map_err(|e| RepoError::Database(e.to_string()))?;
+
     Ok(())
 }

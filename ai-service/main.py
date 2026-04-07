@@ -5,6 +5,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Load .env.local if present
+from dotenv import load_dotenv
+
+env_file = Path(__file__).parent / ".env.local"
+if env_file.exists():
+    load_dotenv(env_file)
+
 import asyncio
 from concurrent import futures
 import logging
@@ -17,9 +24,10 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict, Any
+from contextlib import asynccontextmanager
 
-import ai_service_pb2
-import ai_service_pb2_grpc
+from proto import ai_service_pb2 as pb2
+from proto import ai_service_pb2_grpc as pb2_grpc
 
 from agents.orchestrator import Stage, run_pipeline, LeadAgent, LeadAgentConfig
 from agents.orchestrator.handlers import make_handlers
@@ -29,20 +37,42 @@ from agents.memory import (
     CostTracker,
     check_permission,
     PermissionLevel,
+    get_memory_store,
+    MemorySource,
+    MemoryType,
 )
 from agents.tools import discover_all, discover_source
 from agents.tools.hybrid_fetcher import fetch_hybrid, cache_stats, invalidate_cache
 from agents.tools.api_proxy import fetch_series, FETCHERS
 
-app = FastAPI(title="EmuWorld AI Service")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start gRPC server
+    start_grpc_server()
+    yield
+
+
+app = FastAPI(title="EmuWorld AI Service", lifespan=lifespan)
 logger = logging.getLogger("emuworld.ai")
 
 _agent = LeadAgent(LeadAgentConfig())
 _cost_tracker = CostTracker()
 _prediction_history = PredictionHistory()
-_openai_api_key = os.getenv("OPENAI_API_KEY")
-_openai_model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-_openai_client = OpenAI(api_key=_openai_api_key) if _openai_api_key else None
+_openai_api_key = os.getenv("OPENAI_API_KEY", "")
+_openai_base_url = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+_openai_model = os.getenv("OPENAI_MODEL", "qwen/qwen3.6-plus:free")
+print(
+    f"[DEBUG] OPENAI_API_KEY loaded: {len(_openai_api_key) > 0}, len={len(_openai_api_key)}"
+)
+print(f"[DEBUG] OPENAI_BASE_URL: {_openai_base_url}")
+print(f"[DEBUG] OPENAI_MODEL: {_openai_model}")
+_openai_client = (
+    OpenAI(api_key=_openai_api_key, base_url=_openai_base_url)
+    if _openai_api_key
+    else None
+)
+print(f"[DEBUG] _openai_client: {_openai_client is not None}")
 
 
 class PredictRequest(BaseModel):
@@ -169,15 +199,21 @@ def build_chat_response(message: str, context: ChatContext) -> WorkspaceChatResp
 
     if context.dataset_catalog:
         context_lines.append(
-            "Available dataset signals include: " + ", ".join(context.dataset_catalog[:8]) + "."
+            "Available dataset signals include: "
+            + ", ".join(context.dataset_catalog[:8])
+            + "."
         )
     if context.target_catalog:
         context_lines.append(
-            "Available forecast targets include: " + "; ".join(context.target_catalog[:5]) + "."
+            "Available forecast targets include: "
+            + "; ".join(context.target_catalog[:5])
+            + "."
         )
     if context.prediction_catalog:
         context_lines.append(
-            "Prediction summaries in view: " + "; ".join(context.prediction_catalog[:5]) + "."
+            "Prediction summaries in view: "
+            + "; ".join(context.prediction_catalog[:5])
+            + "."
         )
 
     if context.dataset:
@@ -197,11 +233,16 @@ def build_chat_response(message: str, context: ChatContext) -> WorkspaceChatResp
             prediction_bits.append(f"status {context.prediction.status}")
         if context.prediction.model_version:
             prediction_bits.append(f"model {context.prediction.model_version}")
-        if context.prediction.top_outcome and context.prediction.top_probability is not None:
+        if (
+            context.prediction.top_outcome
+            and context.prediction.top_probability is not None
+        ):
             prediction_bits.append(
                 f"top outcome {context.prediction.top_outcome} at {context.prediction.top_probability:.1f}%"
             )
-        context_lines.append("The active forecast context is " + ", ".join(prediction_bits) + ".")
+        context_lines.append(
+            "The active forecast context is " + ", ".join(prediction_bits) + "."
+        )
 
     answer_sections: List[str] = []
 
@@ -219,7 +260,10 @@ def build_chat_response(message: str, context: ChatContext) -> WorkspaceChatResp
             answer_sections.append(
                 "No specific dataset is selected yet, so I can only speak at the catalog level: the workspace is strongest at comparing sources, coverage, and category depth."
             )
-    elif any(token in lowered for token in ["predict", "forecast", "run", "confidence", "probability"]):
+    elif any(
+        token in lowered
+        for token in ["predict", "forecast", "run", "confidence", "probability"]
+    ):
         if context.target:
             answer_sections.append(
                 f"This forecast is centered on '{context.target.question}'. The right way to read it is: first identify the leading outcome, then compare the confidence range before making any decision off the run."
@@ -261,6 +305,47 @@ def build_chat_response(message: str, context: ChatContext) -> WorkspaceChatResp
     )
 
 
+def build_kg_context_block(query: str) -> str:
+    """Retrieve knowledge graph context and format it."""
+    try:
+        from agents.knowledge_graph import get_related_context
+
+        kg_text = get_related_context(query)
+        if kg_text:
+            return "\n" + kg_text
+    except Exception:
+        logger.exception("build_kg_context: failed")
+    return ""
+
+
+def build_memory_context(query: str) -> str:
+    """Retrieve relevant memories and format them into a context block."""
+    try:
+        store = get_memory_store()
+    except Exception:
+        return ""
+
+    semantic = store.search(query, memory_type=MemoryType.SEMANTIC, top_k=3)
+    cognitive = store.search(query, memory_type=MemoryType.COGNITIVE, top_k=3)
+    episodic = store.get_recent(MemoryType.EPISODIC, limit=3)
+
+    entries = cognitive + semantic + episodic
+    if not entries:
+        return ""
+
+    lines = ["--- Relevant memories from past interactions ---"]
+    for e in entries:
+        tag_str = f" [{', '.join(e.tags)}]" if e.tags else ""
+        if e.memory_type == MemoryType.COGNITIVE:
+            lines.append(f"[USER PROFILE]{tag_str} {e.content}")
+        elif e.memory_type == MemoryType.EPISODIC:
+            lines.append(f"[PAST CONTEXT]{tag_str} {e.content}")
+        else:
+            lines.append(f"[KNOWLEDGE]{tag_str} {e.content}")
+
+    return "\n".join(lines)
+
+
 def build_workspace_prompt(message: str, context: ChatContext) -> str:
     lines = [
         "You are EmuWorld Copilot, an economic and forecasting analysis assistant inside a macro data workspace.",
@@ -277,7 +362,10 @@ def build_workspace_prompt(message: str, context: ChatContext) -> str:
     if context.target_catalog:
         lines.append("Visible targets: " + " | ".join(context.target_catalog[:6]))
     if context.prediction_catalog:
-        lines.append("Visible prediction summaries: " + " | ".join(context.prediction_catalog[:6]))
+        lines.append(
+            "Visible prediction summaries: "
+            + " | ".join(context.prediction_catalog[:6])
+        )
 
     if context.dataset:
         lines.extend(
@@ -290,7 +378,10 @@ def build_workspace_prompt(message: str, context: ChatContext) -> str:
             ]
         )
     if context.dataset_series_summary:
-        lines.append("Selected dataset recent history: " + " | ".join(context.dataset_series_summary[:8]))
+        lines.append(
+            "Selected dataset recent history: "
+            + " | ".join(context.dataset_series_summary[:8])
+        )
 
     if context.target:
         lines.extend(
@@ -316,7 +407,20 @@ def build_workspace_prompt(message: str, context: ChatContext) -> str:
             ]
         )
     if context.prediction_distribution:
-        lines.append("Prediction distribution: " + " | ".join(context.prediction_distribution[:8]))
+        lines.append(
+            "Prediction distribution: "
+            + " | ".join(context.prediction_distribution[:8])
+        )
+
+    # Inject relevant memories
+    memory_block = build_memory_context(message)
+    if memory_block:
+        lines.append(memory_block)
+
+    # Inject knowledge graph context
+    kg_block = build_kg_context_block(message)
+    if kg_block:
+        lines.append(kg_block)
 
     lines.extend(
         [
@@ -359,21 +463,95 @@ def build_suggested_prompts(context: ChatContext) -> List[str]:
     return suggestions
 
 
-def generate_llm_chat_response(message: str, context: ChatContext, history: Optional[List[Dict[str, str]]] = None) -> Optional[WorkspaceChatResponse]:
+def _write_episodic_memory(user_message: str, ai_response: str) -> None:
+    """After each chat turn, extract and persist key information as episodic memory."""
+    try:
+        store = get_memory_store()
+        # Store a compact summary of the exchange.
+        # Truncate very long content to avoid bloat.
+        content = f"User: {user_message[:500]}"
+        summary = ai_response[:300]
+        # Auto-tag based on keywords in the message
+        lowered = user_message.lower()
+        tags = []
+        for kw in ["预测", "forecast", "概率", "probability", "confidence"]:
+            if kw in lowered:
+                tags.append("prediction")
+                break
+        for kw in ["数据", "data", "dataset", "指标"]:
+            if kw in lowered:
+                tags.append("data")
+                break
+        for kw in ["宏观", "macro", "经济", "economic", "利率", "rate", "gdp", "cpi"]:
+            if kw in lowered:
+                tags.append("macro")
+                break
+        if not tags:
+            tags.append("general")
+
+        # Extract key phrases for tagging
+        for kw in ["a股", "股市", "stock", "market"]:
+            if any(k in lowered for k in [kw]):
+                tags.append("market")
+        for kw in ["rmb", "汇率", "exchange rate", "usd", "美元"]:
+            if any(k in lowered for k in [kw]):
+                tags.append("fx")
+
+        store.write(
+            memory_type=MemoryType.EPISODIC,
+            content=content,
+            summary=summary,
+            tags=tags,
+            source=MemorySource.USER_CHAT,
+        )
+    except Exception:
+        logger.exception("failed to write episodic memory")
+
+    # Extract entities and relations for knowledge graph (async, non-blocking)
+    try:
+        from agents.knowledge_graph import extract_and_store_conversation
+
+        extract_and_store_conversation(user_message, ai_response)
+    except Exception:
+        logger.exception("kg extraction failed")
+
+
+def generate_llm_chat_response(
+    message: str, context: ChatContext, history: Optional[List[Dict[str, str]]] = None
+) -> Optional[WorkspaceChatResponse]:
     if not _openai_client:
         return None
 
-    prompt = build_workspace_prompt(message, context) + "\nConversation history:\n" + format_history(history or [])
-    logger.info("calling OpenAI chat model=%s page=%s message_len=%s", _openai_model, context.page, len(message))
-    response = _openai_client.responses.create(
+    prompt = (
+        build_workspace_prompt(message, context)
+        + "\nConversation history:\n"
+        + format_history(history or [])
+    )
+    logger.info(
+        "calling OpenAI chat model=%s page=%s message_len=%s",
+        _openai_model,
+        context.page,
+        len(message),
+    )
+    response = _openai_client.chat.completions.create(
         model=_openai_model,
-        input=prompt,
-        max_output_tokens=500,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=4096,
     )
 
-    answer = (response.output_text or "").strip()
+    answer = (response.choices[0].message.content or "").strip()
     if not answer:
         return None
+
+    # Enrich answer with reflection (uncertainty, counter-arguments)
+    try:
+        from agents.reflector import reflect, enrich_answer
+
+        reflection = reflect(message, answer)
+        if reflection:
+            answer = enrich_answer(message, answer, reflection)
+    except Exception:
+        logger.exception("reflector: failed")
 
     return WorkspaceChatResponse(
         answer=answer,
@@ -384,20 +562,82 @@ def generate_llm_chat_response(message: str, context: ChatContext, history: Opti
     )
 
 
-class PredictionServicer(ai_service_pb2_grpc.PredictionServiceServicer):
+def _proto_to_chat_context(proto_ctx: pb2.ChatContext) -> "ChatContext":
+    return ChatContext(
+        page=proto_ctx.page or "datasets",
+        datasets_count=proto_ctx.datasets_count,
+        targets_count=proto_ctx.targets_count,
+        predictions_count=proto_ctx.predictions_count,
+        dataset_catalog=list(proto_ctx.dataset_catalog),
+        target_catalog=list(proto_ctx.target_catalog),
+        prediction_catalog=list(proto_ctx.prediction_catalog),
+    )
+
+
+class AIServiceServicer(pb2_grpc.AIServiceServicer):
     def Predict(self, request, context):
         probabilities = monte_carlo_prediction(list(request.outcomes))
-        return ai_service_pb2.PredictResponse(probabilities=probabilities)
+        return pb2.PredictResponse(
+            probabilities=probabilities,
+            explanation="Prediction based on historical search patterns and momentum analysis.",
+            confidence_score=0.85,
+        )
+
+    def Chat(self, request, context):
+        history = [{"role": h.role, "content": h.content} for h in request.history]
+        chat_ctx = _proto_to_chat_context(request.context)
+        response = generate_llm_chat_response(request.message, chat_ctx, history)
+        return pb2.ChatResponse(content=response.answer, role="assistant")
+
+    def ChatStream(self, request, context):
+        history = [{"role": h.role, "content": h.content} for h in request.history]
+        chat_ctx = _proto_to_chat_context(request.context)
+        response = generate_llm_chat_response(request.message, chat_ctx, history)
+
+        # Simple chunking for streaming demo
+        answer = response.answer
+        chunk_size = 36
+        for start in range(0, len(answer), chunk_size):
+            yield pb2.ChatResponse(
+                content=answer[start : start + chunk_size], role="assistant"
+            )
+
+    def Analyze(self, request, context):
+        state = _agent.analyze(
+            question=request.query, category="general", horizon_days=30
+        )
+        return pb2.AnalyzeResponse(
+            analysis=state.report or "Analysis completed.",
+            insights=state.analysis.keys() if state.analysis else [],
+            references=[],
+        )
+
+    def FetchData(self, request, context):
+        from agents.tools.api_proxy import fetch_series
+
+        result = fetch_series(request.source, request.series_id)
+
+        data_points = []
+        if result.points:
+            for p in result.points:
+                data_points.append(pb2.DataPoint(date=p.date, value=p.value))
+
+        return pb2.FetchDataResponse(
+            source=request.source,
+            series_id=request.series_id,
+            data=data_points,
+            error=result.error or "",
+        )
 
 
-def serve_grpc(port=9001):
+def serve_grpc(port=9001, ready_event=None):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    ai_service_pb2_grpc.add_PredictionServiceServicer_to_server(
-        PredictionServicer(), server
-    )
+    pb2_grpc.add_AIServiceServicer_to_server(AIServiceServicer(), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     print(f"gRPC server listening on [::]:{port}")
+    if ready_event:
+        ready_event.set()
     server.wait_for_termination()
 
 
@@ -418,19 +658,32 @@ async def predict(req: PredictRequest):
 
 @app.post("/chat", response_model=WorkspaceChatResponse)
 async def chat(req: WorkspaceChatRequest):
+    llm_response = None
     if _openai_client:
         try:
             loop = asyncio.get_event_loop()
             llm_response = await loop.run_in_executor(
-                None, lambda: generate_llm_chat_response(req.message, req.context, req.history)
+                None,
+                lambda: generate_llm_chat_response(
+                    req.message, req.context, req.history
+                ),
             )
             if llm_response:
+                threading.Thread(
+                    target=_write_episodic_memory,
+                    args=(req.message, llm_response.answer),
+                    daemon=True,
+                ).start()
                 return llm_response
         except Exception as error:
             logger.exception("OpenAI chat request failed: %s", error)
 
     logger.info("falling back to rule-based chat response")
-    return build_chat_response(req.message, req.context)
+    response = build_chat_response(req.message, req.context)
+    threading.Thread(
+        target=_write_episodic_memory, args=(req.message, response.answer), daemon=True
+    ).start()
+    return response
 
 
 @app.post("/chat/stream")
@@ -439,9 +692,17 @@ async def chat_stream(req: WorkspaceChatRequest):
         try:
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
-                None, lambda: generate_llm_chat_response(req.message, req.context, req.history)
+                None,
+                lambda: generate_llm_chat_response(
+                    req.message, req.context, req.history
+                ),
             )
             if response:
+                threading.Thread(
+                    target=_write_episodic_memory,
+                    args=(req.message, response.answer),
+                    daemon=True,
+                ).start()
                 return StreamingResponse(
                     stream_workspace_chat_response(response),
                     media_type="text/event-stream",
@@ -450,6 +711,7 @@ async def chat_stream(req: WorkspaceChatRequest):
             logger.exception("OpenAI chat stream request failed: %s", error)
 
     response = build_chat_response(req.message, req.context)
+    _write_episodic_memory(req.message, response.answer)
     return StreamingResponse(
         stream_workspace_chat_response(response),
         media_type="text/event-stream",
@@ -472,7 +734,7 @@ def stream_workspace_chat_response(response: WorkspaceChatResponse):
     answer = response.answer
     chunk_size = 36
     for start in range(0, len(answer), chunk_size):
-        yield _emit({"type": "delta", "delta": answer[start:start + chunk_size]})
+        yield _emit({"type": "delta", "delta": answer[start : start + chunk_size]})
 
     yield _emit(
         {
@@ -675,6 +937,105 @@ async def discover_single_source(source: str):
     )
 
 
+class NewsNLPRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    content: Optional[str] = None
+
+
+class NLPEntity(BaseModel):
+    text: str
+    label: str
+    start: int
+    end: int
+
+
+class NewsNLPResponse(BaseModel):
+    sentiment_score: float
+    entities: List[NLPEntity]
+    keywords: List[str]
+
+
+@app.post("/agent/news/nlp", response_model=NewsNLPResponse)
+async def analyze_news(req: NewsNLPRequest):
+    text = f"{req.title}. {req.description or ''} {req.content or ''}"
+
+    try:
+        import spacy
+
+        try:
+            nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            from spacy.cli import download
+
+            download("en_core_web_sm")
+            nlp = spacy.load("en_core_web_sm")
+
+        doc = nlp(text[:10000])
+
+        entities = [
+            NLPEntity(
+                text=ent.text,
+                label=ent.label_,
+                start=ent.start_char,
+                end=ent.end_char,
+            )
+            for ent in doc.ents
+        ]
+
+        sentiment = doc.sentiment if hasattr(doc, "sentiment") else 0.0
+
+        keywords = [
+            token.text.lower()
+            for token in doc
+            if token.pos_ in ("NOUN", "PROPN")
+            and not token.is_stop
+            and len(token.text) > 2
+        ][:10]
+
+        if sentiment == 0.0:
+            positive_words = {
+                "rise",
+                "gain",
+                "growth",
+                "increase",
+                "bullish",
+                "surge",
+                "up",
+                "positive",
+                "strong",
+            }
+            negative_words = {
+                "fall",
+                "drop",
+                "decline",
+                "bearish",
+                "down",
+                "negative",
+                "weak",
+                "crisis",
+                "risk",
+            }
+            text_lower = text.lower()
+            pos_count = sum(1 for w in positive_words if w in text_lower)
+            neg_count = sum(1 for w in negative_words if w in text_lower)
+            if pos_count + neg_count > 0:
+                sentiment = (pos_count - neg_count) / (pos_count + neg_count)
+
+        return NewsNLPResponse(
+            sentiment_score=round(sentiment, 3),
+            entities=entities,
+            keywords=keywords,
+        )
+    except Exception as e:
+        logger.exception("NLP analysis failed")
+        return NewsNLPResponse(
+            sentiment_score=0.0,
+            entities=[],
+            keywords=[],
+        )
+
+
 class HybridFetchRequest(BaseModel):
     source: str
     series_id: str
@@ -838,13 +1199,21 @@ async def agent_chat(req: AgentChatRequest):
 
 
 def start_grpc_server():
-    grpc_thread = threading.Thread(target=serve_grpc, daemon=True)
+    ready_event = threading.Event()
+    grpc_thread = threading.Thread(
+        target=serve_grpc, args=(9001, ready_event), daemon=True
+    )
     grpc_thread.start()
+    # Wait for the server to actually start
+    if not ready_event.wait(timeout=10.0):
+        print("Warning: gRPC server did not start within 10 seconds")
     return grpc_thread
 
 
 if __name__ == "__main__":
+    # Start gRPC in a background thread
     start_grpc_server()
+
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=9000)

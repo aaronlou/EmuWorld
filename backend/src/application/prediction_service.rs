@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
+    integrations::ai_client::AIClient,
     models::PredictionResponse,
     repo::{AppRepo, CreatePrediction, RepoError, Result},
 };
@@ -8,18 +9,18 @@ use crate::{
 #[derive(Clone)]
 pub struct PredictionService {
     repo: Arc<dyn AppRepo>,
-    ai_service_url: String,
+    ai_client: Arc<AIClient>,
 }
 
 impl PredictionService {
-    pub fn new(repo: Arc<dyn AppRepo>, ai_service_url: String) -> Self {
+    pub fn new(repo: Arc<dyn AppRepo>, ai_client: Arc<AIClient>) -> Self {
         Self {
             repo,
-            ai_service_url,
+            ai_client,
         }
     }
 
-    pub async fn generate_prediction(&self, target_id: i64) -> Result<PredictionResponse> {
+    pub async fn generate_prediction(&self, target_id: i64) -> Result<i64> {
         let target = self
             .repo
             .get_target(target_id)
@@ -40,66 +41,54 @@ impl PredictionService {
             .repo
             .create_run(&crate::repo::CreatePredictionRun {
                 target_id,
-                status: "running".into(),
+                status: "pending".into(),
                 model_version: "v1".into(),
                 input_snapshot,
             })
             .await?;
 
-        let client = reqwest::Client::new();
-        let ai_response = match client
-            .post(format!("{}/predict", self.ai_service_url))
-            .json(&serde_json::json!({
-                "question": target.question,
-                "horizon_days": target.horizon_days,
-                "outcomes": outcomes,
-            }))
-            .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(e) => {
-                let message = e.to_string();
-                let _ = self.repo.mark_run_failed(run.id, &message).await;
-                return Err(RepoError::ExternalService(message));
+        let run_id = run.id;
+        let service = self.clone();
+        let outcomes_clone = outcomes.clone();
+        let question_clone = target.question.clone();
+        let horizon_days = target.horizon_days as i32;
+
+        // 在后台执行预测逻辑
+        tokio::spawn(async move {
+            let _ = service.repo.mark_run_running(run_id).await;
+
+            match service.ai_client.predict(
+                question_clone,
+                outcomes_clone.clone(),
+                horizon_days,
+            ).await {
+                Ok(ai_response) => {
+                    let probs = ai_response.probabilities;
+                    let predictions: Vec<CreatePrediction> = outcomes_clone
+                        .iter()
+                        .zip(probs.iter())
+                        .map(|(outcome, prob)| CreatePrediction {
+                            target_id,
+                            run_id,
+                            outcome: outcome.clone(),
+                            probability: *prob,
+                            confidence_lower: (*prob - 0.05).max(0.0),
+                            confidence_upper: (*prob + 0.05).min(1.0),
+                        })
+                        .collect();
+
+                    if let Err(err) = service.repo.create_batch(target_id, &predictions).await {
+                        let _ = service.repo.mark_run_failed(run_id, &err.to_string()).await;
+                    } else {
+                        let _ = service.repo.mark_run_completed(run_id).await;
+                    }
+                }
+                Err(e) => {
+                    let _ = service.repo.mark_run_failed(run_id, &e.to_string()).await;
+                }
             }
-        };
+        });
 
-        let probs: Vec<f64> = match ai_response.json().await {
-            Ok(probs) => probs,
-            Err(e) => {
-                let message = e.to_string();
-                let _ = self.repo.mark_run_failed(run.id, &message).await;
-                return Err(RepoError::ExternalService(message));
-            }
-        };
-
-        let predictions: Vec<CreatePrediction> = outcomes
-            .iter()
-            .zip(probs.iter())
-            .map(|(outcome, prob)| CreatePrediction {
-                target_id,
-                run_id: run.id,
-                outcome: outcome.clone(),
-                probability: *prob,
-                confidence_lower: (*prob - 0.05).max(0.0),
-                confidence_upper: (*prob + 0.05).min(1.0),
-            })
-            .collect();
-
-        if let Err(err) = self.repo.create_batch(target_id, &predictions).await {
-            let _ = self.repo.mark_run_failed(run.id, &err.to_string()).await;
-            return Err(err);
-        }
-
-        let run = self.repo.mark_run_completed(run.id).await?;
-        let predictions = self.repo.list_by_run(run.id).await?;
-
-        Ok(PredictionResponse {
-            target,
-            run,
-            predictions,
-            generated_at: chrono::Utc::now(),
-        })
+        Ok(run_id)
     }
 }

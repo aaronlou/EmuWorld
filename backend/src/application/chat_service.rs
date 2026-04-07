@@ -1,22 +1,37 @@
 use std::sync::Arc;
-
-use futures_util::TryStreamExt;
-use tracing::{error, info};
+use futures_util::{Stream, StreamExt};
+use bytes::Bytes;
 
 use crate::{
+    integrations::ai_client::{ai_service, AIClient},
     models::{ChatContext, ChatMessageRecord, ChatRequest, ChatResponse, ChatSession},
     repo::{AppRepo, CreateChatMessage, CreateChatSession, RepoError, Result},
 };
 
+fn to_proto_context(ctx: &ChatContext) -> ai_service::ChatContext {
+    ai_service::ChatContext {
+        page: ctx.page.clone(),
+        datasets_count: ctx.datasets_count as u32,
+        targets_count: ctx.targets_count as u32,
+        predictions_count: ctx.predictions_count as u32,
+        dataset_catalog: ctx.dataset_catalog.clone(),
+        target_catalog: ctx.target_catalog.clone(),
+        prediction_catalog: ctx.prediction_catalog.clone(),
+        dataset: ctx.dataset.as_ref().map(|d| d.name.clone()).unwrap_or_default(),
+        target: ctx.target.as_ref().map(|t| t.question.clone()).unwrap_or_default(),
+        prediction: ctx.prediction.as_ref().map(|p| p.run_id.map(|id| id.to_string()).unwrap_or_default()).unwrap_or_default(),
+    }
+}
+
 #[derive(Clone)]
 pub struct ChatService {
     repo: Arc<dyn AppRepo>,
-    ai_service_url: String,
+    ai_client: Arc<AIClient>,
 }
 
 impl ChatService {
-    pub fn new(repo: Arc<dyn AppRepo>, ai_service_url: String) -> Self {
-        Self { repo, ai_service_url }
+    pub fn new(repo: Arc<dyn AppRepo>, ai_client: Arc<AIClient>) -> Self {
+        Self { repo, ai_client }
     }
 
     async fn enrich_context(&self, mut context: ChatContext) -> Result<ChatContext> {
@@ -84,40 +99,19 @@ impl ChatService {
             .await
     }
 
-    async fn build_ai_request(&self, request: &ChatRequest) -> Result<serde_json::Value> {
+    pub async fn chat(&self, request: &ChatRequest) -> Result<ChatResponse> {
         let session = self.ensure_session(request).await?;
-        let enriched_context = self.enrich_context(request.context.clone()).await?;
+        
         let history = self
             .repo
             .list_chat_messages(session.id)
             .await?
             .into_iter()
-            .map(|message| {
-                serde_json::json!({
-                    "role": message.role,
-                    "content": message.content,
-                })
+            .map(|message| ai_service::ChatHistory {
+                role: message.role,
+                content: message.content,
             })
             .collect::<Vec<_>>();
-
-        Ok(serde_json::json!({
-            "session_id": session.id,
-            "message": request.message,
-            "context": enriched_context,
-            "history": history,
-        }))
-    }
-
-    pub async fn chat(&self, request: &ChatRequest) -> Result<ChatResponse> {
-        let session = self.ensure_session(request).await?;
-        let ai_request = self.build_ai_request(request).await?;
-
-        info!(
-            session_id = session.id,
-            page = request.context.page,
-            message_len = request.message.len(),
-            "forwarding chat request to ai-service"
-        );
 
         self.repo
             .create_chat_message(&CreateChatMessage {
@@ -130,34 +124,20 @@ impl ChatService {
             })
             .await?;
 
-        let client = reqwest::Client::new();
-        let response = client
-            .post(format!("{}/chat", self.ai_service_url))
-            .json(&ai_request)
-            .send()
-            .await
-            .map_err(|error| RepoError::ExternalService(error.to_string()))?;
+        let ai_response = self.ai_client.chat(
+            request.message.clone(),
+            history,
+            to_proto_context(&request.context),
+        ).await.map_err(|e| RepoError::ExternalService(e.to_string()))?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "<unreadable body>".into());
-            error!(
-                session_id = session.id,
-                %status,
-                response_body = %body,
-                "ai-service returned non-success for chat"
-            );
-            return Err(RepoError::ExternalService(format!(
-                "ai-service chat failed with {status}: {body}"
-            )));
-        }
-
-        let mut response = response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|error| RepoError::ExternalService(error.to_string()))?;
-
-        response.session_id = Some(session.id);
+        let response = ChatResponse {
+            session_id: Some(session.id),
+            answer: ai_response.content.clone(),
+            suggested_prompts: vec![], 
+            provider: "openai".into(), 
+            model: "default".into(),
+            used_fallback: false,
+        };
 
         self.repo
             .create_chat_message(&CreateChatMessage {
@@ -176,32 +156,42 @@ impl ChatService {
     pub async fn chat_stream(
         &self,
         request: &ChatRequest,
-    ) -> Result<impl futures_util::Stream<Item = std::result::Result<bytes::Bytes, RepoError>>> {
-        let ai_request = self.build_ai_request(request).await?;
+    ) -> Result<impl Stream<Item = std::result::Result<Bytes, tonic::Status>>> {
+        let session = self.ensure_session(request).await?;
+        
+        let history = self
+            .repo
+            .list_chat_messages(session.id)
+            .await?
+            .into_iter()
+            .map(|message| ai_service::ChatHistory {
+                role: message.role,
+                content: message.content,
+            })
+            .collect::<Vec<_>>();
 
-        let client = reqwest::Client::new();
-        let response = client
-            .post(format!("{}/chat/stream", self.ai_service_url))
-            .json(&ai_request)
-            .send()
-            .await
-            .map_err(|error| RepoError::ExternalService(error.to_string()))?;
+        self.repo
+            .create_chat_message(&CreateChatMessage {
+                session_id: session.id,
+                role: "user".into(),
+                content: request.message.clone(),
+                provider: None,
+                model: None,
+                used_fallback: false,
+            })
+            .await?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "<unreadable body>".into());
-            error!(
-                %status,
-                response_body = %body,
-                "ai-service returned non-success for chat stream"
-            );
-            return Err(RepoError::ExternalService(format!(
-                "ai-service chat stream failed with {status}: {body}"
-            )));
-        }
+        let stream = self.ai_client.chat_stream(
+            request.message.clone(),
+            history,
+            to_proto_context(&request.context),
+        ).await.map_err(|e| RepoError::ExternalService(e.to_string()))?;
 
-        Ok(response
-            .bytes_stream()
-            .map_err(|error| RepoError::ExternalService(error.to_string())))
+        Ok(stream.map(|res| {
+            res.map(|chat_res| {
+                let data = format!("data: {}\n\n", chat_res.content);
+                Bytes::from(data)
+            })
+        }))
     }
 }

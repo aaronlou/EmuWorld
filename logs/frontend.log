@@ -4,4 +4,4 @@
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://192.168.3.52:5173/
-  ➜  Network: http://172.16.9.1:5173/
+  ➜  Network: http://10.111.222.0:5173/
